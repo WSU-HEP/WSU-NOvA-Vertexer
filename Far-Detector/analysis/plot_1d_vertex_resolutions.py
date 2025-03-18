@@ -54,9 +54,12 @@ colors = utils.plot.NuModeColors()
 print(f'pred_file: {args.pred_file}')
 print(f'Making plots for coordinate {C}.....')
 
+# vars to save the column name strings of DataFrame.
 true_C = f'True {C}'
 reco_C = f'Reco {C}'
 model_C = f'Model Pred {C}'
+abs_vtx_diff_EA_C = f'AbsVtxDiff.EA.{C}'
+abs_vtx_diff_model_C = f'AbsVtxDiff.Model.{C}'
 
 # filename without the CSV and path.
 pred_filename_prefix = args.pred_file.split('/')[-1].split('.')[0]  # get the filename only and remove the .csv
@@ -181,14 +184,14 @@ plt.close(fig_res_int_Model)
 # Abs(resolution)
 # plot the abs(reco - true) vertex difference for both: Elastic Arms and Model Prediction
 fig_resolution = plt.figure(figsize=(5, 3))
-hist_EA_abs, bins_EA_abs, patches_EA_abs = plt.hist(df[f'AbsVtxDiff.EA.{C}'],
+hist_EA_abs, bins_EA_abs, patches_EA_abs = plt.hist(df[abs_vtx_diff_EA_C],
                                         bins=bins_abs_resolution,
                                         range=(-50, 50),
                                         color='black',
                                         alpha=0.5,
                                         label='Elastic Arms',
                                         hatch='//')
-hist_Model_abs, bins_Model_abs, patches_Model_abs = plt.hist(df[f'AbsVtxDiff.Model.{C}'],
+hist_Model_abs, bins_Model_abs, patches_Model_abs = plt.hist(df[abs_vtx_diff_model_C],
                                                  bins=bins_abs_resolution,
                                                  range=(-50, 50),
                                                  color='orange',
@@ -197,7 +200,7 @@ hist_Model_abs, bins_Model_abs, patches_Model_abs = plt.hist(df[f'AbsVtxDiff.Mod
 plt.xlabel('|Reco - True| Vertex [cm]')
 plt.ylabel('Events')
 plt.text(30, hist_EA_abs.max() * 0.6, f'{DET} {HORN}\nAll Interactions\n {C} coordinate', fontsize=8)
-plt.text(30, hist_EA_abs.max() * 0.45, f'Mean E.A.: {df[f'AbsVtxDiff.EA.{C}'].mean():.2f} cm\nMean Model: {df[f'AbsVtxDiff.Model.{C}'].mean():.2f} cm', fontsize=8)
+plt.text(30, hist_EA_abs.max() * 0.45, f'Mean E.A.: {df[abs_vtx_diff_EA_C].mean():.2f} cm\nMean Model: {df[abs_vtx_diff_model_C].mean():.2f} cm', fontsize=8)
 plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
@@ -285,14 +288,14 @@ for i in range(0, len(int_modes)):
         continue
     fig_resolution_int = plt.figure(figsize=(5, 3))
     df_mode = df_modes[i]  # need to save the dataframe to a variable
-    hist_EA, bins, patches = plt.hist(df_mode[f'AbsVtxDiff.EA.{C}'],
+    hist_EA, bins, patches = plt.hist(df_mode[abs_vtx_diff_EA_C],
                                       bins=bins_abs_resolution,
                                       range=(-50, 50),
                                       color=colors.get_color(utils.plot.ModeType.name(i), False),
                                       alpha=0.5,
                                       label='Elastic Arms',
                                       hatch='//')
-    hist_Model, bins_Model, patches_Model = plt.hist(df_mode[f'AbsVtxDiff.Model.{C}'],
+    hist_Model, bins_Model, patches_Model = plt.hist(df_mode[abs_vtx_diff_model_C],
                                                      bins=bins_abs_resolution,
                                                      range=(-50, 50),
                                                      color=colors.get_color(utils.plot.ModeType.name(i), True),
@@ -303,7 +306,7 @@ for i in range(0, len(int_modes)):
     plt.xlabel('|Reco.  - True| Vertex [cm]')
     plt.ylabel('Events')
     plt.text(35, hist_EA.max() * 0.6, f'{DET} {HORN}\n{C} coordinate', fontsize=8)
-    plt.text(35, hist_EA.max() * 0.45, f'Mean E.A.: {df_mode['AbsVtxDiff.EA.{C}'].mean():.2f} cm\nMean Model: {df_mode['AbsVtxDiff.Model.{C}'].mean():.2f} cm', fontsize=8)
+    plt.text(35, hist_EA.max() * 0.45, f'Mean E.A.: {df_mode[abs_vtx_diff_EA_C].mean():.2f} cm\nMean Model: {df_mode[abs_vtx_diff_model_C].mean():.2f} cm', fontsize=8)
     plt.legend(loc='upper right')
     plt.subplots_adjust(bottom=0.15, left=0.15)
     plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
