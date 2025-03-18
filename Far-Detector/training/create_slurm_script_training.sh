@@ -71,32 +71,35 @@ cat > $slurm_dir/submit_slurm_${outputfile}.sh <<EOS
 ### better for a single "task"
 #SBATCH --ntasks=1         # Single task
 #SBATCH --cpus-per-task=8  # Allocate 8 CPUs for better parallel processing
-#SBATCH --mem=384000M      # RealMemory=514903M for gpu202401
+#SBATCH --mem=450000M      # RealMemory=514903M for gpu202401
 #SBATCH --gres=gpu:2       # Request 2 GPUs
 
 #SBATCH --nodelist=gpu202401  # compatible with TF 2.15.0
 
 ###SBATCH --mail-type ALL
-###SBATCH --mail-user <wsuid-email>
+###SBATCH --mail-user \${USER}\@wichita.edu
 #======================================================================================================================================
 
 echo "user is: \${USER}"
+
+export WSUVTX="/homes/\$USER/WSU-NOvA-Vertexer"
+echo "WSUVTX is: \${WSUVTX}"
 
 # load modules
 module load Python/3.11.5-GCCcore-13.2.0
 source /homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/activate
 /homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python --version
 
-echo "INFO: appending MLVTX to PYTHONPATH"
+echo "INFO: appending WSUVTX to PYTHONPATH"
 unset PYTHONPATH
-export PYTHONPATH="/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/lib/python3.11/site-packages:/homes/\${USER}/WSU-NOvA-Vertexer"
+export PYTHONPATH="/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/lib/python3.11/site-packages:\${WSUVTX}"
 echo "PYTHONPATH is ... \$PYTHONPATH"
 
 export LD_LIBRARY_PATH="/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/lib:\$LD_LIBRARY_PATH"
 
-echo "/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python /home/\${USER}/WSU-NOvA-Vertexer/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS"
+echo "/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS"
 #run python script
-/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python /home/\${USER}/WSU-NOvA-Vertexer/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS
+/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS
 
 
 # After the job finishes, log resource usage
