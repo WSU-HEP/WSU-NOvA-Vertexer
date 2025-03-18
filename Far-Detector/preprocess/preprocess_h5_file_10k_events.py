@@ -36,20 +36,20 @@ if __name__ == '__main__':
 
     # this outPath is hard-coded, it's in "my" directory
     outPath = '/home/k948d562/output/wsu-vertexer/preprocess'
-    outName = 'preprocessed_{}_{}'.format(event_string, infile)
+    outName = f'preprocessed_{event_string}_{infile}'
     print('Processing h5 file: ' + infile)
     print('Saving for training to ' + outPath)
 
     # Don't recreate the file if it exists
-    print('Creating file...{}'.format(os.path.join(outPath, outName)))
+    print(f'Creating file...{os.path.join(outPath, outName)}')
     if os.path.exists(os.path.join(outPath, outName)):
         print('File already exists. Don\'t want to overwrite! Exiting...')
-        exit(0)
+        sys.exit()
 
     # Load the h5 file
     # One file at a time to avoid problems with loading a bunch of pixel maps in memory
-    print('Opening file.....{}'.format(infile))
-    print('Extracting first {} events'.format(event_limit))
+    print(f'Opening file.....{infile}'.format(infile))
+    print(f'Extracting first {event_limit} events')
     df_x = h5py.File(inFilePath, 'r')['vtx.x'][0:event_limit]
     df_y = h5py.File(inFilePath, 'r')['vtx.y'][0:event_limit]
     df_z = h5py.File(inFilePath, 'r')['vtx.z'][0:event_limit]
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     df_firstcellx = h5py.File(inFilePath, 'r')['firstcellx'][0:event_limit]
     df_firstcelly = h5py.File(inFilePath, 'r')['firstcelly'][0:event_limit]
     df_firstplane = h5py.File(inFilePath, 'r')['firstplane'][0:event_limit]
-    print('loaded the vertices, first cells, first plane and cvnmap dfs. {} events only!'.format(event_limit))
+    print(f'loaded the vertices, first cells, first plane and cvnmap dfs. {event_limit} events only!')
 
     # Save in an h5 with new dataset keys
     hf = h5py.File(os.path.join(outPath, outName), 'w')
