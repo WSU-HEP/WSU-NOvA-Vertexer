@@ -153,12 +153,14 @@ metrics = pd.DataFrame(history.history)
 output_name = f'{args.epochs}epochs_{det}_{horn}_{flux}_{date.today()}_XYZ'
 
 # save the model
-save_model_dir = '/home/k948d562/output/trained-models/'
-model_regCNN.save(save_model_dir + f'model_{output_name}.h5')
-print('saved model to: ', save_model_dir + f'model_{output_name}.h5')
+save_model_dir = '/homes/m962g264/RegCNN_Unified_Outputs/model/'
+model_regCNN.save(save_model_dir + 'model_{}.h5'.format(output_name))
+print('saved model to: ', save_model_dir + 'model_{}.h5'.format(output_name))
+
 # Items in the model file: <KeysViewHDF5 ['model_weights', 'optimizer_weights']>
 
-save_metric_dir = f'/home/k948d562/output/metrics/{output_name}'
+
+save_metric_dir = f'/homes/m962g264/RegCNN_Unified_Outputs/metrics/{output_name}'
 
 # Evaluate the test set
 print('METRICS:')
@@ -171,6 +173,6 @@ metrics.to_csv(save_metric_dir + f'/metrics_{output_name}.csv', index_label='epo
 print('Saved metrics to: ', save_metric_dir + f'/metrics_{output_name}.csv')
 
 
-plot_dir = '/home/k948d562/plots/ml-vertexing-plots/training/'
+plot_dir = '/homes/m962g264/RegCNN_Unified_Outputs/plots/loss/'
 utils.plot.plot_training_metrics(history, plot_dir, 'train_metrics_' + output_name)
 print('Done.')
