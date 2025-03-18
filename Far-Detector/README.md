@@ -5,7 +5,7 @@
 
 _Original Author_: Michael Dolce -- mdolce@fnal.gov
 
-Updated: **Dec. 2024**
+Updated: **Feb. 2025**
 
 --- 
 
@@ -19,7 +19,7 @@ Updated: **Dec. 2024**
 
 ### NOTE: changing WSUID paths
 The paths in the scripts are set to my WSUID.
-You **MUST** change these paths to your WSUID or else you will not be able to run the scripts.
+You **MUST** change these paths to your WSUID -- `$USER` on BeoShock -- or you will not be able to run the scripts.
 Check where they are by doing:
 ```grep -i "k948d562" * -r```.
 
@@ -29,7 +29,7 @@ Much of the frequently-used code has been moved to `utils`.
 ## 0. Pre-processing
 As it stands, the code is set up to run on the WSU cluster.
 The objective is to slim the file sizeby reducing the other unnecessary NOvA variables. 
-The variables we require are:
+The only variables we require are:
 
 - `cvnmap` 
 - `vtx.{x,y,z}`
@@ -39,7 +39,7 @@ The variables we require are:
 The `cvnmap` and `vtx.{x,y,z}` values are explicitly required for training.
 The pixelmaps (`cvnmap`) are our features and the true vertex location is our label.
 
-There are other variables we need that record the information of which cell (for x and y coordinates) and plane (for z) is the start of the pixel map. This will allow us to translate back and forth from detector space to pixel map space.  
+The `firtcell{x,y}` and `firstplane` are used for the first hits of energy recorded in the detectors. This allows us to translate back and forth from detector space to pixel map space.  
 
 To start, we run a bash script to create the slurm configuration for a WSU Beoshock cluster job(s). In an SSH session on the BeoShock cluster, we use this incantation:
 ```
@@ -122,7 +122,7 @@ EPOCHS=$5     # number of epochs
 ```
  which are identical arguments to the pre-processing script. We run the script like this: 
 
-``` . create_slurm_script_training.sh <coordinates> <det> <horn> <flux> <epochs>```
+``` . create_slurm_script_training.sh xyz <det> <horn> <flux> <epochs>```
 
 Before running, we must address the file path: 
 * **the user must manually copy the `preprocessed_*.h5` files to the `training` directory.**
@@ -147,31 +147,44 @@ This script does many important things:
 
 ---
 
-### Details about training: 
+### Resources for training: 
 
 We produce three outputs: X, Y, and Z. The model uses both pixel map images
 to "learn" about the vertex location for each coordinate. 
-In principle, it we are maximizing the information of each coordinate by giving the model the two views for every event.
+In principle, we are maximizing the information of each coordinate by giving the model the two views for every event.
 
-**`slurm` directives**:
+In our slurm script for submitting the training, we also request available CPUs for better parallel processing. 
+However, the bulk of the training is done with one of the two GPU nodes we have available. 
+Here are details of their memory allocations: `scontrol show node gpu20??01 | grep RealMemory`:
+* gpu20901
+  * `RealMemory=384896M`
+* gpu202401
+  * `RealMemory=514903M`
+
+NOTE: the software stack must be newer than the hardware.
+
 Because we are using significantly more memory loading **both** sets of pixel map images for training,
-we use a sizable amount of memory. Fortunately our requests (as of now) fit within a single node.
-From a recent job, `sacct` reports:
+we use a sizable amount of memory. 
+Fortunately our requests (as of now) fit within a single node.
+We now use the `gpu202401` node for trainings, as our software stack is compatible with this newer A30 Nvidia hardware.
+
+
+Our most recent training was done with this node, and a few summary statistics are printed below via `sacct`:
 
 ```
-sacct -j 916110 --format=JobID,JobName,MaxRSS,MaxVMSize,NodeList 
-JobID           JobName     MaxRSS  MaxVMSize        NodeList 
------------- ---------- ---------- ---------- --------------- 
-916110       xyz_FD_FH+                             gpu201901 
-916110.batch      batch 342366260K          0       gpu201901 
-916110.exte+     extern       256K          0       gpu201901 
+sacct -j 928018 --format=JobID,JobName,MaxRSS,MaxVMSize,NodeList,Elapsed,State 
+JobID           JobName     MaxRSS  MaxVMSize        NodeList    Elapsed      State 
+------------ ---------- ---------- ---------- --------------- ---------- ---------- 
+928018       xyz_FD_FH+                             gpu202401   08:53:37  COMPLETED 
+928018.batch      batch 169961804K          0       gpu202401   08:53:37  COMPLETED 
+928018.exte+     extern          0          0       gpu202401   08:53:37  COMPLETED 
 ```
 
-* 340 GB of memory usage
-* For the current version of TensorFlow & Python (2.3.1 and 3.7), user **must** request
-`--nodelist=gpu201901` otherwise model will return garbage on the newer, 2024 Physics GPUs
-(this is already done inside the `create_slurm` bash script).
+We use about ~170 GB of memory usage -- **NOTE** the features (the cvnmaps are `unit8`, currently, reducing our memory usage).
 
+For the current version of TensorFlow & Python (2.15.0 and 3.11.5), user **should** request resources that are in line with this amount of memory. 
+
+**It is important to note** this training reported above is only for 4 files of FD Fluxswap -- adding more files will of course increase memory usage.
 
 ---
 

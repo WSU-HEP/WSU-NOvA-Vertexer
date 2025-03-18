@@ -1,3 +1,8 @@
++ v2.0.0
+  - bump software to Python 3.11.5 and TF 2.15.0.
+  - use newer gpus with more memory allocation available, with new software
+  - drop the Prod5 code
+
 + v1.1.0
   - correct the slurm directives for --nodelist and --mem --> use only gpu201901, yields successful training.
   - many new functions for debugging and cleaning data, eg dropping 'bad' vertex events.

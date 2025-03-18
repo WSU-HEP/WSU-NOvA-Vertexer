@@ -142,7 +142,6 @@ for ext in ['pdf', 'png']:
         OUTDIR + '/plot_{}_Allmodes_Radial_Distance.'.format(str_det_horn) + ext,
         dpi=300)
 
-<<<<<<< Updated upstream:Prod5.1-FD/analysis/XYZ_radial_plot.py
 #For interaction types
 for i in range(0, len(int_modes)):
     if df_modes[i].empty:

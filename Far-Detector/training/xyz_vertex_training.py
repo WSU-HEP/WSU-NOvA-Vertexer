@@ -17,7 +17,6 @@ from datetime import date
 import numpy as np
 import os
 import pandas as pd
-import pickle
 from tensorflow.keras.optimizers import Adam  # optimizer
 from sklearn.metrics import mean_squared_error, mean_absolute_error, explained_variance_score, r2_score
 import time
@@ -112,9 +111,9 @@ cvnmap_xz = cvnmap_xz[keep_drop_evts['keep']]
 cvnmap_yz = cvnmap_yz[keep_drop_evts['keep']]
 assert cvnmap_xz.shape[0] == cvnmap_yz.shape[0] == vtx_coords.shape[0]
 
+cvnmap_xz = cvnmap_xz.astype(np.uint8)
+cvnmap_yz = cvnmap_yz.astype(np.uint8)
 vtx_coords = vtx_coords.astype(np.float16)
-cvnmap_xz = cvnmap_xz.astype(np.float16)
-cvnmap_yz = cvnmap_yz.astype(np.float16)
 
 
 # #### Prepare the Training & Test Sets
@@ -140,9 +139,6 @@ model_regCNN = utils.model.Config.assemble_model_output(model_xz, model_yz)
 utils.model.Config.compile_model(model_regCNN)
 print(model_regCNN.summary())
 
-scaler, data_train, data_val, data_test = utils.model.Config.transform_data(data_train,
-                                                                            data_val,
-                                                                            data_test)
 
 dp.print_input_data(data_train, data_test, data_val)
 
@@ -165,11 +161,15 @@ model_regCNN.save(save_model_dir + 'model_{}.h5'.format(output_name))
 print('saved model to: ', save_model_dir + 'model_{}.h5'.format(output_name))
 # Items in the model file: <KeysViewHDF5 ['model_weights', 'optimizer_weights']>
 
+<<<<<<< HEAD:Prod5.1-FD/training/xyz_vertex_training.py
 # save the MinMaxScaler()
 with open(f"{save_model_dir}/scaler_{output_name}.pkl", "wb") as f:
     pickle.dump(scaler, f)
 
 save_metric_dir = f'/homes/m962g264/RegCNN_Unified_Outputs/metrics/{output_name}'
+=======
+save_metric_dir = f'/home/k948d562/output/metrics/{output_name}'
+>>>>>>> main:Far-Detector/training/xyz_vertex_training.py
 
 # Evaluate the test set
 print('METRICS:')

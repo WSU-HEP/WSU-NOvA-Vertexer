@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "poetry1-7-0-test-py3-11-tf2-15"
+version = "0.1.0"
+description = ""
+authors = ["Michael Dolce <mike.dolce8@gmail.com>"]
+readme = "README.md"
+packages = [{include = "poetry1"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+matplotlib = "^3.10.0"
+numpy = "1.26.4"
+pandas = "^2.2.3"
+scikit-learn = "^1.6.1"
+psutil = "^7.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

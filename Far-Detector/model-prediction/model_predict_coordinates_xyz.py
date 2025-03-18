@@ -16,7 +16,6 @@ import utils.iomanager as io
 import argparse
 import numpy as np
 import pandas as pd
-import pickle
 from tensorflow.keras.models import load_model
 import os
 import time
@@ -149,23 +148,7 @@ cvnmap_yz = datasets['cvnmap'][:, :, :, 1].reshape(datasets['cvnmap'].shape[0], 
 print('cvnmap_xz.shape ', cvnmap_xz.shape)
 print('cvnmap_yz.shape ', cvnmap_yz.shape)
 print('========================================')
-
-pkl_path = args.model_file.replace('model_', 'scaler_').replace('.h5', '.pkl')  # this is the full path
-print('Loading pickle file for MinMaxScaler().....')
-with open(f'{pkl_path}', 'rb') as f:
-    scaler = pickle.load(f)
-print('transform()-ing the XZ and YZ views.....  ')
-# Ensure they have the same shape structure
 assert cvnmap_xz.shape == cvnmap_yz.shape, "Shapes of cvnmap_xz and cvnmap_yz must match."
-
-# Transform the scaler on combined training data
-scaled_data = scaler.transform(np.vstack([
-                cvnmap_xz.reshape(cvnmap_xz.shape[0], -1),  # Flatten spatial dimensions
-                cvnmap_yz.reshape(cvnmap_yz.shape[0], -1)
-]))
-# Split the scaled data back into XZ and YZ
-cvnmap_xz[:] = scaled_data[:cvnmap_xz.shape[0]].reshape(cvnmap_xz.shape[0], 100, 80, 1)
-cvnmap_yz[:] = scaled_data[cvnmap_xz.shape[0]:].reshape(cvnmap_yz.shape[0], 100, 80, 1)
 print('========================================')
 
 
