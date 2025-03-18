@@ -10,18 +10,16 @@
 # TODO: We remove the file index, which is just 1, so squeeze() works.
 #  we'll need to fix this if/when we have multiple files to load in...
 
-import utils.data_processing as dp
-import utils.iomanager as io
+import os
 
 import argparse
 import numpy as np
 import pandas as pd
 from tensorflow.keras.models import load_model
-import os
 import time
 
-import utils.model
-
+import utils.data_processing as dp
+import utils.iomanager as io
 ########### begin main script ###########
 
 
@@ -51,8 +49,7 @@ print("Model loaded successfully.")
 
 # Load the designated test file. This is file 27 -- has not been pre-processed; all info is in it.
 # NOTE: there is only one test file for the FD validation, and it should be within the "test" directory
-path_validation = '/home/k948d562/NOvA-shared/FD-Training-Samples/{}-Nominal-{}-{}/test/'.format(
-    DETECTOR, HORN, FLUX)
+path_validation = f'/home/k948d562/NOvA-shared/FD-Training-Samples/{DETECTOR}-Nominal-{HORN}-{FLUX}/test/'
 
 
 # Read in the info from the validation file -- don't really care about the events & files here.
@@ -74,7 +71,7 @@ for key in datasets:
         print(f'Skipping {key}, will NOT flatten().')
         continue
     datasets[key] = datasets[key].flatten()
-    print('datasets[{}].shape: '.format(key), datasets[key].shape)
+    print(f'datasets[{key}].shape: {datasets[key].shape}')
 
 
 print('========================================')
@@ -190,6 +187,6 @@ print(df.columns)
 print('df', type(df))
 print('The first 10 rows of the CSV are:\n', df.iloc[:10,:])
 training_filename_prefix = training_filename_prefix.split('model_')[1]  # take off the 'model_' prefix
-fileName = 'model_prediction_{}.csv'.format(training_filename_prefix)
+fileName = f'model_prediction_{training_filename_prefix}.csv'
 df.to_csv(outdir + '/' + fileName, sep=',')
 print(f'Saved to: {outdir}/{fileName}')

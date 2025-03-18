@@ -16,17 +16,18 @@
 
 # TODO: I am not applying the filter I used to do the training! Do I need to do that?
 
-# ML Vtx utils
-import utils.data_processing as dp
-import utils.iomanager as io
-import utils.plot
 
-import argparse
 import os
+import argparse
 import h5py
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+
+# ML Vtx utils
+import utils.data_processing as dp
+import utils.iomanager as io
+import utils.plot
 
 # collect the arguments for this macro. the horn and swap options are required.
 parser = argparse.ArgumentParser()
@@ -50,8 +51,12 @@ int_modes = utils.plot.ModeType.get_known_int_modes()
 colors = utils.plot.NuModeColors()
 
 
-print('pred_file: {}'.format(args.pred_file))
+print(f'pred_file: {args.pred_file}')
 print(f'Making plots for coordinate {C}.....')
+
+true_C = f'True {C}'
+reco_C = f'Reco {C}'
+model_C = f'Model Pred {C}'
 
 # filename without the CSV and path.
 pred_filename_prefix = args.pred_file.split('/')[-1].split('.')[0]  # get the filename only and remove the .csv
@@ -62,7 +67,7 @@ df = dp.ModelPrediction.load_pred_csv_file(args.pred_file)
 
 # want the mode from the test file (same one used to make the predictions).
 test_file = args.test_file.format(DET, HORN, FLUX, DET, HORN, FLUX)
-print('test_file: {}'.format(test_file))
+print(f'test_file: {test_file}')
 with h5py.File(test_file, mode='r') as f:
     df_mode = pd.DataFrame({'Mode': f['mode'][:]})
 
@@ -86,7 +91,7 @@ assert (len(df[df['Mode'] == -1]) == 0)  # 'there are Unknown events. Stopping'
 # output directory
 print('Output Directory: ', args.outdir)
 OUTDIR = utils.plot.make_output_dir(args.outdir, 'resolution', pred_filename_prefix)
-str_det_horn = '{}_{}'.format(DET, HORN)
+str_det_horn = f'{DET}_{HORN}'
 
 
 print('Creating plots..................')
@@ -101,16 +106,16 @@ bins_relative_resolution = np.arange(-0.2, 0.2, .01)  # edges at +- 20%
 
 ############### Metrics ###############
 # directly calculate the mean and RMS from the dataframe.
-mean_Model = np.mean(df['Model Pred {}'.format(C)] - df['True {}'.format(C)])
-rms_Model = np.sqrt(np.mean((df['Model Pred {}'.format(C)] - df['True {}'.format(C)]) ** 2))
+mean_Model = np.mean(df[model_C] - df[true_C])
+rms_Model = np.sqrt(np.mean((df[model_C] - df[true_C]) ** 2))
 
-mean_EA = np.mean(df['Reco {}'.format(C)] - df['True {}'.format(C)])
-rms_EA = np.sqrt(np.mean((df['Reco {}'.format(C)] - df['True {}'.format(C)]) ** 2))
+mean_EA = np.mean(df[reco_C] - df[true_C])
+rms_EA = np.sqrt(np.mean((df[reco_C] - df[true_C]) ** 2))
 
 # percent differences. Note, RMS of the residual is not reported.
-mean_EA_all_relres = ((df['Reco {}'.format(C)] - df['True {}'.format(C)]) / df['True {}'.format(C)]).mean()
+mean_EA_all_relres = ((df[reco_C] - df[true_C]) / df[true_C]).mean()
 mean_float_EA_all_relres = float(mean_EA_all_relres)
-mean_Model_all_relres = ((df['Model Pred {}'.format(C)] - df['True {}'.format(C)]) / df['True {}'.format(C)]).mean()
+mean_Model_all_relres = ((df[model_C] - df[true_C]) / df[true_C]).mean()
 mean_float_Model_all_relres = float(mean_Model_all_relres)
 
 
@@ -124,25 +129,24 @@ for i in range(0, len(int_modes)):
         continue
     df_mode = df_modes[i]
     hist_EA_all, bins_all, patches_all = plt.hist(
-        df_mode[f'Reco {C}'] - df_mode[f'True {C}'],
+        df_mode[reco_C] - df_mode[true_C],
         bins=bins_resolution,
         range=(-50, 50),
         color=colors.mode_colors_EA[utils.plot.ModeType.name(i)],
         alpha=0.5,
         label=utils.plot.ModeType.name(i))
 plt.title('Elastic Arms Vertex Resolution')
-plt.xlabel('Reco. - True Vertex {} [cm]'.format(C))
+plt.xlabel(f'Reco. - True Vertex {C} [cm]')
 plt.ylabel('Events')
-plt.text(15, 9e3, '{} {}\nElastic Arms\n{} coordinate'.format(DET, HORN, C), fontsize=12)
-plt.text(15, 5e3, 'Mean: {:.2f} cm\nRMS: {:.2f} cm'.format(mean_EA, rms_EA), fontsize=12)
+plt.text(15, 9e3, f'{DET} {HORN}\nElastic Arms\n{C} coordinate', fontsize=12)
+plt.text(15, 5e3, f'Mean: {mean_EA:.2f} cm\nRMS: {rms_EA:.2f} cm', fontsize=12)
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
 plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 # plt.show()
 for ext in ['pdf', 'png']:
     fig_res_int_EA.savefig(
-        OUTDIR + '/plot_{}_allmodes_Resolution_{}_ElasticArms.'.format(
-            str_det_horn, C) + ext, dpi=300)
+        OUTDIR + f'/plot_{str_det_horn}_allmodes_Resolution_{C}_ElasticArms.' + ext, dpi=300)
 plt.close(fig_res_int_EA)
 
 # Model Prediction, ONLY
@@ -152,25 +156,24 @@ for i in range(0, len(int_modes)):
     if df_modes[i].empty: continue
     df_mode = df_modes[i]
     hist_Model_all, bins_all, patches_all = plt.hist(
-        df_mode['Model Pred {}'.format(C)] - df_mode['True {}'.format(C)],
+        df_mode[model_C] - df_mode[true_C],
         bins=bins_resolution,
         range=(-50, 50),
         color=colors.mode_colors_Model[utils.plot.ModeType.name(i)],
         alpha=0.5,
         label=utils.plot.ModeType.name(i))
 plt.title('Model Prediction Resolution')
-plt.xlabel('Reco. - True Vertex {} [cm]'.format(C))
+plt.xlabel(f'Reco. - True Vertex {C} [cm]')
 plt.ylabel('Events')
-plt.text(25, 15e3, '{} {}\nModel Prediction\n{} coordinate'.format(DET, HORN, C), fontsize=12)
-plt.text(25, 5e3, 'Mean: {:.2f} cm\nRMS: {:.2f} cm'.format(mean_Model, rms_Model), fontsize=12)
+plt.text(25, 15e3, f'{DET} {HORN}\nModel Prediction\n{C} coordinate', fontsize=12)
+plt.text(25, 5e3, f'Mean: {mean_Model:.2f} cm\nRMS: {rms_Model:.2f} cm', fontsize=12)
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
 plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 # plt.show()
 for ext in ['pdf', 'png']:
     fig_res_int_Model.savefig(
-        OUTDIR + '/plot_{}_allmodes_Resolution_{}_ModelPred.'.format(
-            str_det_horn, C) + ext, dpi=300)
+        OUTDIR + f'/plot_{str_det_horn}_allmodes_Resolution_{C}_ModelPred.' + ext, dpi=300)
 plt.close(fig_res_int_Model)
 # ------------- All interactions separate model end -------------
 
@@ -178,14 +181,14 @@ plt.close(fig_res_int_Model)
 # Abs(resolution)
 # plot the abs(reco - true) vertex difference for both: Elastic Arms and Model Prediction
 fig_resolution = plt.figure(figsize=(5, 3))
-hist_EA_abs, bins_EA_abs, patches_EA_abs = plt.hist(df['AbsVtxDiff.EA.{}'.format(C)],
+hist_EA_abs, bins_EA_abs, patches_EA_abs = plt.hist(df[f'AbsVtxDiff.EA.{C}'],
                                         bins=bins_abs_resolution,
                                         range=(-50, 50),
                                         color='black',
                                         alpha=0.5,
                                         label='Elastic Arms',
                                         hatch='//')
-hist_Model_abs, bins_Model_abs, patches_Model_abs = plt.hist(df['AbsVtxDiff.Model.{}'.format(C)],
+hist_Model_abs, bins_Model_abs, patches_Model_abs = plt.hist(df[f'AbsVtxDiff.Model.{C}'],
                                                  bins=bins_abs_resolution,
                                                  range=(-50, 50),
                                                  color='orange',
@@ -193,16 +196,14 @@ hist_Model_abs, bins_Model_abs, patches_Model_abs = plt.hist(df['AbsVtxDiff.Mode
                                                  label='Model Pred.')
 plt.xlabel('|Reco - True| Vertex [cm]')
 plt.ylabel('Events')
-plt.text(30, hist_EA_abs.max() * 0.6, '{} {}\nAll Interactions\n {} coordinate'.format(DET, HORN, C),
-         fontsize=8)
-plt.text(30, hist_EA_abs.max() * 0.45, 'Mean E.A.: {:.2f} cm\nMean Model: {:.2f} cm'.format(df['AbsVtxDiff.EA.{}'.format(C)].mean(), df['AbsVtxDiff.Model.{}'.format(C)].mean()), fontsize=8)
+plt.text(30, hist_EA_abs.max() * 0.6, f'{DET} {HORN}\nAll Interactions\n {C} coordinate', fontsize=8)
+plt.text(30, hist_EA_abs.max() * 0.45, f'Mean E.A.: {df[f'AbsVtxDiff.EA.{C}'].mean():.2f} cm\nMean Model: {df[f'AbsVtxDiff.Model.{C}'].mean():.2f} cm', fontsize=8)
 plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
 # plt.show()
 for ext in ['pdf', 'png']:
-    fig_resolution.savefig(OUTDIR + '/plot_{}_allmodes_{}_AbsResolution.'.
-                           format(str_det_horn, C) + ext, dpi=300)
+    fig_resolution.savefig(OUTDIR + f'/plot_{str_det_horn}_allmodes_{C}_AbsResolution.' + ext, dpi=300)
 plt.close(fig_resolution)
 
 # Resolution
@@ -210,7 +211,7 @@ plt.close(fig_resolution)
 fig_resolution = plt.figure(figsize=(5, 3))
 
 hist_EA_all_res, bins_EA_all_res, patches_EA_all_res = plt.hist(
-    df['Reco {}'.format(C)] - df['True {}'.format(C)],
+    df[reco_C] - df[true_C],
     bins=bins_resolution,
     color='black',
     alpha=0.5,
@@ -218,17 +219,16 @@ hist_EA_all_res, bins_EA_all_res, patches_EA_all_res = plt.hist(
     hatch='//')
 
 hist_Model_all_res, bins_Model_all_res, patches_Model_all_res = plt.hist(
-    df['Model Pred {}'.format(C)] - df['True {}'.format(C)],
+    df[model_C] - df[true_C],
     bins=bins_resolution,
     color='orange',
     alpha=0.5,
     label='Model Pred.')
-plt.text(14, 4e4, 'Mean E.A.: {:.2f} cm\nRMS E.A.: {:.2f} cm'.format(mean_EA, rms_EA), fontsize=8)
-plt.text(14, 2e4, 'Mean Model: {:.2f} cm\nRMS Model: {:.2f} cm'.format(mean_Model, rms_Model), fontsize=8)
-plt.xlabel('(Reco - True) Vertex {} [cm]'.format(C))
+plt.text(14, 4e4, f'Mean E.A.: {mean_EA:.2f} cm\nRMS E.A.: {rms_EA:.2f} cm', fontsize=8)
+plt.text(14, 2e4, f'Mean Model: {mean_Model:.2f} cm\nRMS Model: {rms_Model:.2f} cm', fontsize=8)
+plt.xlabel(f'(Reco - True) Vertex {C} [cm]')
 plt.ylabel('Events')
-plt.text(-40, hist_EA_all_res.max() * 0.75, '{} {}\nAll Interactions\n {} coordinate'.format(
-    DET, HORN, C), fontsize=8)
+plt.text(-40, hist_EA_all_res.max() * 0.75, f'{DET} {HORN}\nAll Interactions\n {C} coordinate', fontsize=8)
 plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
@@ -236,7 +236,7 @@ plt.subplots_adjust(bottom=0.15, left=0.15)
 # plt.show()
 for ext in ['pdf', 'png']:
     fig_resolution.savefig(
-        OUTDIR + '/plot_{}_allmodes_{}_Resolution.'.format(str_det_horn, C) + ext,
+        OUTDIR + f'/plot_{str_det_horn}_allmodes_{C}_Resolution.' + ext,
         dpi=300)
 plt.close(fig_resolution)
 
@@ -245,22 +245,21 @@ plt.close(fig_resolution)
 # Elastic Arms and Model Prediction
 fig_resolution = plt.figure(figsize=(5, 3))
 hist_EA_all_relres, bins_EA_all_relres, patches_EA_all_relres = plt.hist(
-    (df['Reco {}'.format(C)] - df['True {}'.format(C)]) / df['True {}'.format(C)],
+    (df[reco_C] - df[true_C]) / df[true_C],
     bins=bins_relative_resolution,
     color='black',
     alpha=0.5,
     label='Elastic Arms',
     hatch='//')
 hist_Model_all_relres, bins_Model_all_relres, patches_Model_all_relres = plt.hist(
-    (df['Model Pred {}'.format(C)] - df['True {}'.format(C)]) / df['True {}'.format(C)],
+    (df[model_C] - df[true_C]) / df[true_C],
     bins=bins_relative_resolution,
     color='orange',
     alpha=0.5,
     label='Model Pred.')
-plt.xlabel('(Reco - True)/True {}'.format(C))
+plt.xlabel(f'(Reco - True)/True {C}')
 plt.ylabel('Events')
-plt.text(0.05, hist_EA_all_relres.max() * 0.7, '{} {}\nAll Interactions\n {} coordinate'.format(DET, HORN, C),
-         fontsize=8)
+plt.text(0.05, hist_EA_all_relres.max() * 0.7, f'{DET} {HORN}\nAll Interactions\n {C} coordinate', fontsize=8)
 plt.text(0.05,hist_EA_all_relres.max() * 0.5,
          f'Mean E.A.: {mean_float_EA_all_relres:.2f} cm\nMean Model: {mean_float_Model_all_relres:.2f} cm',
          fontsize=8)
@@ -270,8 +269,7 @@ plt.subplots_adjust(bottom=0.15, left=0.15)
 # plt.show()
 for ext in ['pdf', 'png']:
     fig_resolution.savefig(
-        OUTDIR + '/plot_{}_allmodes_{}_RelResolution.'.format(
-            str_det_horn, C) + ext, dpi=300)
+        OUTDIR + f'/plot_{str_det_horn}_allmodes_{C}_RelResolution.' + ext, dpi=300)
 plt.close(fig_resolution)
 # ------------ Individual interactions Overlaid, Model + E.A., [Abs, Res, RelRes]  -------------
 
@@ -287,32 +285,31 @@ for i in range(0, len(int_modes)):
         continue
     fig_resolution_int = plt.figure(figsize=(5, 3))
     df_mode = df_modes[i]  # need to save the dataframe to a variable
-    hist_EA, bins, patches = plt.hist(df_mode['AbsVtxDiff.EA.{}'.format(C)],
+    hist_EA, bins, patches = plt.hist(df_mode[f'AbsVtxDiff.EA.{C}'],
                                       bins=bins_abs_resolution,
                                       range=(-50, 50),
                                       color=colors.get_color(utils.plot.ModeType.name(i), False),
                                       alpha=0.5,
                                       label='Elastic Arms',
                                       hatch='//')
-    hist_Model, bins_Model, patches_Model = plt.hist(df_mode['AbsVtxDiff.Model.{}'.format(C)],
+    hist_Model, bins_Model, patches_Model = plt.hist(df_mode[f'AbsVtxDiff.Model.{C}'],
                                                      bins=bins_abs_resolution,
                                                      range=(-50, 50),
                                                      color=colors.get_color(utils.plot.ModeType.name(i), True),
                                                      alpha=0.5,
                                                      label='Model Pred.')
     # NOTE: no RMS for these plots.
-    plt.title('{} Interactions'.format(utils.plot.ModeType.name(i)))
+    plt.title(f'{utils.plot.ModeType.name(i)} Interactions')
     plt.xlabel('|Reco.  - True| Vertex [cm]')
     plt.ylabel('Events')
-    plt.text(35, hist_EA.max() * 0.6, '{} {}\n{} coordinate'.format(DET, HORN, C), fontsize=8)
-    plt.text(35, hist_EA.max() * 0.45, 'Mean E.A.: {:.2f} cm\nMean Model: {:.2f} cm'.format(df_mode['AbsVtxDiff.EA.{}'.format(C)].mean(), df_mode['AbsVtxDiff.Model.{}'.format(C)].mean()), fontsize=8)
+    plt.text(35, hist_EA.max() * 0.6, f'{DET} {HORN}\n{C} coordinate', fontsize=8)
+    plt.text(35, hist_EA.max() * 0.45, f'Mean E.A.: {df_mode['AbsVtxDiff.EA.{C}'].mean():.2f} cm\nMean Model: {df_mode['AbsVtxDiff.Model.{C}'].mean():.2f} cm', fontsize=8)
     plt.legend(loc='upper right')
     plt.subplots_adjust(bottom=0.15, left=0.15)
     plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
     # plt.show()
     for ext in ['pdf', 'png']:
-        fig_resolution_int.savefig(OUTDIR + '/plot_{}_{}_AbsResolution_{}.'.
-                                   format(str_det_horn, C, utils.plot.ModeType.name(i)) + ext, dpi=300)
+        fig_resolution_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{C}_AbsResolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
     plt.close(fig_resolution_int)
 
 # FOR EACH INTERACTION TYPE
@@ -324,7 +321,7 @@ for i in range(0, len(int_modes)):
     fig_res_int = plt.figure(figsize=(5, 3))
     df_mode = df_modes[i]
     hist_EA, bins_EA, patches_EA = plt.hist(
-        df_mode['Reco {}'.format(C)] - df_mode['True {}'.format(C)],
+        df_mode[reco_C] - df_mode[true_C],
         bins=bins_resolution,
         range=(-50, 50),
         color=colors.get_color(utils.plot.ModeType.name(i), False),
@@ -332,31 +329,29 @@ for i in range(0, len(int_modes)):
         label='Elastic Arms',
         hatch='//')
     hist_Model, bins_Model, patches_Model = plt.hist(
-        df_mode['Model Pred {}'.format(C)] - df_mode['True {}'.format(C)],
+        df_mode[model_C] - df_mode[true_C],
         bins=bins_resolution,
         range=(-50, 50),
         color=colors.get_color(utils.plot.ModeType.name(i), True),
         alpha=0.5,
         label='Model Pred.')
     # Calculate the mean and RMS individually INSIDE the loop here
-    mean_int_EA = np.mean(df_mode['Reco {}'.format(C)] - df_mode['True {}'.format(C)])
-    mean_int_Model = np.mean(df_mode['Model Pred {}'.format(C)] - df_mode['True {}'.format(C)])
-    rms_int_EA = np.sqrt(np.mean((df_mode['Reco {}'.format(C)] - df_mode['True {}'.format(C)]) ** 2))
-    rms_int_Model = np.sqrt(np.mean((df_mode['Model Pred {}'.format(C)] - df_mode['True {}'.format(C)]) ** 2))
+    mean_int_EA = np.mean(df_mode[reco_C] - df_mode[true_C])
+    mean_int_Model = np.mean(df_mode[model_C] - df_mode[true_C])
+    rms_int_EA = np.sqrt(np.mean((df_mode[reco_C] - df_mode[true_C]) ** 2))
+    rms_int_Model = np.sqrt(np.mean((df_mode[model_C] - df_mode[true_C]) ** 2))
     plt.xlabel('Reco. - True Vertex [cm]')
     plt.ylabel('Events')
-    plt.title('{} Interactions'.format(utils.plot.ModeType.name(i)))
-    plt.text(20, hist_EA.max() * 0.55, '{} {}\n{} coordinate'.format(DET, HORN, C), fontsize=8)
-    plt.text(20, hist_EA.max() * 0.45, 'Mean E.A.: {:.2f} cm\nMean Model: {:.2f} cm'.format(mean_int_EA, mean_int_Model), fontsize=8)
-    plt.text(20, hist_EA.max() * 0.3, 'RMS E.A.: {:.2f} cm\nRMS Model: {:.2f} cm'.format(rms_int_EA, rms_int_Model), fontsize=8)
+    plt.title(f'{utils.plot.ModeType.name(i)} Interactions')
+    plt.text(20, hist_EA.max() * 0.55, f'{DET} {HORN}\n{C} coordinate', fontsize=8)
+    plt.text(20, hist_EA.max() * 0.45, f'Mean E.A.: {mean_int_EA:.2f} cm\nMean Model: {mean_int_EA:.2f} cm', fontsize=8)
+    plt.text(20, hist_EA.max() * 0.3, f'RMS E.A.: {rms_int_EA:.2f} cm\nRMS Model: {rms_int_Model:.2f} cm', fontsize=8)
     plt.legend(loc='upper right')
     plt.subplots_adjust(bottom=0.15, left=0.15)
     plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
     # plt.show()
     for ext in ['pdf', 'png']:
-        fig_res_int.savefig(OUTDIR + '/plot_{}_{}_Resolution_{}.'.format(str_det_horn,
-                                                                              C,
-                                                                              utils.plot.ModeType.name(i)) + ext, dpi=300)
+        fig_res_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{C}_Resolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
         plt.close(fig_res_int)
 
 # FOR EACH INTERACTION TYPE
@@ -368,34 +363,33 @@ for i in range(0, len(int_modes)):
     fig_res_int = plt.figure(figsize=(5, 3))
     df_mode = df_modes[i]
     hist_EA, bins, patches = plt.hist(
-        (df_mode['Reco {}'.format(C)] - df_mode['True {}'.format(C)]) / df_mode[
-            'True {}'.format(C)], bins=bins_relative_resolution, range=(-50, 50),
+        (df_mode[reco_C] - df_mode[true_C]) / df_mode[
+            true_C], bins=bins_relative_resolution, range=(-50, 50),
         color=colors.get_color(utils.plot.ModeType.name(i), False), alpha=0.5, label='Elastic Arms', hatch='//')
     hist_Model, bins_Model, patches_Model = plt.hist(
-        (df_mode['Model Pred {}'.format(C)] - df_mode['True {}'.format(C)]) / df_mode[
-            'True {}'.format(C)], bins=bins_relative_resolution, range=(-50, 50),
+        (df_mode[model_C] - df_mode[true_C]) / df_mode[
+            true_C], bins=bins_relative_resolution, range=(-50, 50),
         color=colors.get_color(utils.plot.ModeType.name(i), True), alpha=0.5, label='Model Pred.')
 
     # NOTE: we do not report the RMS of a residual here, that doesn't make sense...
     # NOTE: RMS of the residual is not reported. Again, inside the loop.
-    mean_EA_int_relres = float(((df_mode['Reco {}'.format(C)] - df_mode['True {}'.format(C)]) / df_mode[
-        'True {}'.format(C)]).mean())
+    mean_EA_int_relres = float(((df_mode[reco_C] - df_mode[true_C]) / df_mode[
+        true_C]).mean())
 
-    mean_Model_int_relres = float(((df_mode['Model Pred {}'.format(C)] - df_mode['True {}'.format(C)]) / df_mode[
-        'True {}'.format(C)]).mean())
+    mean_Model_int_relres = float(((df_mode[model_C] - df_mode[true_C]) / df_mode[
+        true_C]).mean())
 
-    plt.xlabel('(Reco - True)/True Vertex {}'.format(C))
+    plt.xlabel(f'(Reco - True)/True Vertex {C}')
     plt.ylabel('Events')
-    plt.title('{} Interactions'.format(utils.plot.ModeType.name(i)))
-    plt.text(0.05, hist_EA.max() * 0.55, '{} {}\n{} coordinate'.format(DET, HORN, C), fontsize=8)
-    plt.text(0.05, hist_EA.max() * 0.4, 'Mean E.A.: {:.2f} cm\nMean Model: {:.2f} cm'.format(mean_EA_int_relres, mean_Model_int_relres), fontsize=8)
+    plt.title(f'{utils.plot.ModeType.name(i)} Interactions')
+    plt.text(0.05, hist_EA.max() * 0.55, f'{DET} {HORN}\n{C} coordinate', fontsize=8)
+    plt.text(0.05, hist_EA.max() * 0.4, f'Mean E.A.: {mean_EA_int_relres:.2f} cm\nMean Model: {mean_Model_int_relres:.2f} cm', fontsize=8)
     plt.legend(loc='upper right')
     plt.subplots_adjust(bottom=0.15, left=0.15)
     plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
     # plt.show()
     for ext in ['pdf', 'png']:
-        fig_res_int.savefig(OUTDIR + '/plot_{}_{}_RelResolution_{}.'.
-                            format(str_det_horn, C, utils.plot.ModeType.name(i)) + ext, dpi=300)
+        fig_res_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{C}_RelResolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
     plt.close(fig_res_int)
 
 print('Done!')

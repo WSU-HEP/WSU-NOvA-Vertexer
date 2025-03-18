@@ -6,21 +6,18 @@
 # To run this training script:
 #  $ $PY37 xyz_vertex_training.py --data_train_path --epochs <200>
 
+import argparse
+import os
+
+from datetime import date
+import numpy as np
+import pandas as pd
+
 # ML Vtx utils
 import utils.iomanager as io
 import utils.model
 import utils.plot
 import utils.data_processing as dp
-
-import argparse
-from datetime import date
-import numpy as np
-import os
-import pandas as pd
-from tensorflow.keras.optimizers import Adam  # optimizer
-from sklearn.metrics import mean_squared_error, mean_absolute_error, explained_variance_score, r2_score
-import time
-
 ########### begin main script ###########
 
 # collect the arguments for this macro. the horn and swap options are required.
@@ -153,23 +150,17 @@ history = utils.model.train_model(model_regCNN,
 metrics = pd.DataFrame(history.history)
 
 # the default output name
-output_name = '{}epochs_{}_{}_{}_{}_XYZ'.format(args.epochs, det, horn, flux, date.today())
+output_name = f'{args.epochs}epochs_{det}_{horn}_{flux}_{date.today()}_XYZ'
 
 # save the model
 save_model_dir = '/homes/m962g264/RegCNN_Unified_Outputs/model/'
 model_regCNN.save(save_model_dir + 'model_{}.h5'.format(output_name))
 print('saved model to: ', save_model_dir + 'model_{}.h5'.format(output_name))
+
 # Items in the model file: <KeysViewHDF5 ['model_weights', 'optimizer_weights']>
 
-<<<<<<< HEAD:Prod5.1-FD/training/xyz_vertex_training.py
-# save the MinMaxScaler()
-with open(f"{save_model_dir}/scaler_{output_name}.pkl", "wb") as f:
-    pickle.dump(scaler, f)
 
 save_metric_dir = f'/homes/m962g264/RegCNN_Unified_Outputs/metrics/{output_name}'
-=======
-save_metric_dir = f'/home/k948d562/output/metrics/{output_name}'
->>>>>>> main:Far-Detector/training/xyz_vertex_training.py
 
 # Evaluate the test set
 print('METRICS:')
@@ -178,8 +169,8 @@ evaluation = utils.model.evaluate_model(model_regCNN,
                                         data_test,
                                         save_metric_dir)
 print(metrics.head())
-metrics.to_csv(save_metric_dir + '/metrics_{}.csv'.format(output_name), index_label='epoch')
-print('Saved metrics to: ', save_metric_dir + '/metrics_{}.csv'.format(output_name))
+metrics.to_csv(save_metric_dir + f'/metrics_{output_name}.csv', index_label='epoch')
+print('Saved metrics to: ', save_metric_dir + f'/metrics_{output_name}.csv')
 
 
 plot_dir = '/homes/m962g264/RegCNN_Unified_Outputs/plots/loss/'
