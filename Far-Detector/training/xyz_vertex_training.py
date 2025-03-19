@@ -153,12 +153,12 @@ metrics = pd.DataFrame(history.history)
 output_name = f'{args.epochs}epochs_{det}_{horn}_{flux}_{date.today()}_XYZ'
 
 # save the model
-save_model_dir = '/home/k948d562/output/trained-models/'
+save_model_dir = f'/home/{io.USER}/output/trained-models/'
 model_regCNN.save(save_model_dir + f'model_{output_name}.h5')
 print('saved model to: ', save_model_dir + f'model_{output_name}.h5')
 # Items in the model file: <KeysViewHDF5 ['model_weights', 'optimizer_weights']>
 
-save_metric_dir = f'/home/k948d562/output/metrics/{output_name}'
+save_metric_dir = f'/home/{io.USER}/output/metrics/{output_name}'
 
 # Evaluate the test set
 print('METRICS:')
@@ -171,6 +171,6 @@ metrics.to_csv(save_metric_dir + f'/metrics_{output_name}.csv', index_label='epo
 print('Saved metrics to: ', save_metric_dir + f'/metrics_{output_name}.csv')
 
 
-plot_dir = '/home/k948d562/plots/WSU-Vertexer-Plots/training/'
+plot_dir = f'/home/{io.USER}/plots/ml-vertexing-plots/training/'
 utils.plot.plot_training_metrics(history, plot_dir, 'train_metrics_' + output_name)
 print('Done.')
