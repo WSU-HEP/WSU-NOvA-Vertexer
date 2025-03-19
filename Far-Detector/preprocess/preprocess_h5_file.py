@@ -29,19 +29,19 @@ if __name__ == '__main__':
 
     # this outPath is hard-coded, it's in "my" directory
     outPath = '/home/k948d562/output/wsu-vertexer/preprocess'
-    outName = 'preprocessed_{}'.format(infile)
+    outName = f'preprocessed_{infile}'
     print('Processing h5 file: ' + infile)
     print('Saving for training to ' + outPath)
 
     # Don't recreate the file if it exists
-    print('Creating file...{}'.format(os.path.join(outPath, outName)))
+    print(f'Creating file...{os.path.join(outPath, outName)}')
     if os.path.exists(os.path.join(outPath, outName)):
         print('File already exists. Don\'t want to overwrite! Exiting...')
-        exit(0)
+        sys.exit()
 
     # Load the h5 file
     # One file at a time to avoid problems with loading a bunch of pixel maps in memory
-    print('Opening file.....{}'.format(infile))
+    print(f'Opening file.....{infile}')
     df_x = h5py.File(inFilePath, 'r')['vtx.x']
     df_y = h5py.File(inFilePath, 'r')['vtx.y']
     df_z = h5py.File(inFilePath, 'r')['vtx.z']
