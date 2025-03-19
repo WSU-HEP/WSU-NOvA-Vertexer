@@ -220,6 +220,6 @@ metrics.to_csv(save_metric_dir + f'/metrics_{output_name}.csv', index_label='epo
 print('Saved metrics to: ', save_metric_dir + f'/metrics_{output_name}.csv')
 # NOTE: evaluation only returns ONE number for each metric , and one for the loss, so just write to txt file.
 
-plot_dir = f'/home/{io.USER}/plots/ml-vertexing-plots/small-scale-testing/'
+plot_dir = f'/home/{io.USER}/plots/WSU-Vertexer-Plots/small-scale-testing/'
 utils.plot.plot_training_metrics(history, plot_dir, 'train_metrics_' + output_name)
 print('Done.')

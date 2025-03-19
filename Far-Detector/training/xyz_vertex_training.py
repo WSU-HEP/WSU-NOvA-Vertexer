@@ -171,6 +171,6 @@ metrics.to_csv(save_metric_dir + f'/metrics_{output_name}.csv', index_label='epo
 print('Saved metrics to: ', save_metric_dir + f'/metrics_{output_name}.csv')
 
 
-plot_dir = f'/home/{io.USER}/plots/ml-vertexing-plots/training/'
+plot_dir = f'/home/{io.USER}/plots/WSU-Vertexer-Plots/training/'
 utils.plot.plot_training_metrics(history, plot_dir, 'train_metrics_' + output_name)
 print('Done.')
