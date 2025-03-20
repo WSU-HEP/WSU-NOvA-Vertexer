@@ -237,9 +237,9 @@ for i in range(0, len(int_modes)):
     plt.xlabel('Radial Distance [cm]')
     plt.ylabel('Events')
     plt.title('{} Interactions'.format(utils.plot.ModeType.name(i)))
-    plt.text(20, hist_EA.max() * 0.55, '{} {}'.format(DET, HORN), fontsize=8)
+    plt.text(20, hist_EA.max() * 0.70, '{} {}'.format(DET, HORN), fontsize=4)
     plt.text(20, hist_EA.max() * 0.45, 'Events ≤10cm: E.A. {} / Model {}\nEvents ≤20cm: E.A. {} / Model {}\nEvents ≤30cm: E.A. {} / Model {}'.format(
-        count_10cm_EA, count_10cm_Model, count_20cm_EA, count_20cm_Model, count_30cm_EA, count_30cm_Model), fontsize=8)
+        count_10cm_EA, count_10cm_Model, count_20cm_EA, count_20cm_Model, count_30cm_EA, count_30cm_Model), fontsize=6)
 
 
     plt.legend(loc='upper right')
