@@ -105,6 +105,8 @@ class IOManager:
             flux = 'Fluxswap'
         elif 'Nonswap' in nova_string:
             flux = 'Nonswap'
+        elif 'Combined' in nova_string:
+            flux = 'Combined'
         else:
             print('ERROR. I did not find a flux, exiting......')
             exit()

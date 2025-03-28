@@ -17,6 +17,7 @@ import utils.plot
 
 import argparse
 import os
+import sys
 import h5py
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -29,6 +30,10 @@ parser.add_argument("--outdir", help="full path to output directory", default=""
 parser.add_argument("--test_file", help="full path to file used for testing/inference",
                     default="/home/k948d562/NOvA-shared/FD-Training-Samples/{}-Nominal-{}-{}/test/trimmed_h5_R20-11-25-prod5.1reco.j_{}-Nominal-{}-{}_27_of_28.h5",
                     type=str)
+
+meg = parser.add_mutually_exclusive_group()
+meg.add_argument("--nonswap",  required=False, default=False, action='store_true', help="For 'Combined' only, make predictions with the nonswap inference file")
+meg.add_argument("--fluxswap", required=False, default=False, action='store_true', help="For 'Combined' only, make predictions with the fluxswap inference file")
 args = parser.parse_args()
 
 int_modes = utils.plot.ModeType.get_known_int_modes()
@@ -52,8 +57,19 @@ DET, HORN, FLUX = io.IOManager.get_det_horn_and_flux_from_string(args.pred_file)
 # load the CSV file of the model predictions.
 df = dp.ModelPrediction.load_pred_csv_file(args.pred_file)
 
+# If you have 'Combined', determine which file to make predictions on: Fluxswap OR Nonswap.
+flavors = {'Nonswap': 'numus', 'Fluxswap': 'nues'}
+if FLUX == 'Combined' and args.nonswap == True:
+    FLUX = 'Nonswap'
+elif FLUX == 'Combined' and args.fluxswap == True:
+    FLUX = 'Fluxswap'
+else:
+    print('ERROR: Unknown flux option to predict. Exiting.')
+    sys.exit(1)
+
 #want the mode from the test file
 test_file = args.test_file.format(DET, HORN, FLUX, DET, HORN, FLUX)
+
 print('test_file:{}'.format(test_file))
 with h5py.File(test_file, mode='r') as f:
     df_mode = pd.DataFrame({'Mode': f['mode'][:]})
@@ -61,7 +77,7 @@ with h5py.File(test_file, mode='r') as f:
 # output directory
 print('Output Directory: ', args.outdir)
 OUTDIR = utils.plot.make_output_dir(args.outdir, 'radial', pred_filename_prefix)
-str_det_horn = '{}_{}'.format(DET, HORN)
+str_det_horn = '{}_{}_'.format(DET, HORN)
 
 
 df=pd.concat([df, df_mode], axis=1)
@@ -105,32 +121,35 @@ total_events = len(df)
 # Calculate total events within 10cm and 20cm for Elastic Arms
 events_within_10cm_EA = np.sum(EA_radial <= 10)
 events_within_20cm_EA = np.sum(EA_radial <= 20)
-
+events_within_30cm_EA = np.sum(EA_radial <= 30)
 # Calculate total events within 10cm and 20cm for Model Prediction
 events_within_10cm_Model = np.sum(model_radial <= 10)
 events_within_20cm_Model = np.sum(model_radial <= 20)
+events_within_30cm_Model = np.sum(model_radial <= 30)
 
 # Calculate percentages
 percent_10cm_EA = (events_within_10cm_EA / total_events) * 100
 percent_20cm_EA = (events_within_20cm_EA / total_events) * 100
+percent_30cm_EA = (events_within_30cm_EA / total_events) * 100
 percent_10cm_Model = (events_within_10cm_Model / total_events) * 100
 percent_20cm_Model = (events_within_20cm_Model / total_events) * 100
-
+percent_30cm_Model = (events_within_30cm_Model / total_events) * 100
 
 # Add percentages as text annotations
 plt.text(50, hist_EA_all_res.max() * 0.55,
-        f'Elastic Arms:\n10 cm: {percent_10cm_EA:.2f}%\n20 cm: {percent_20cm_EA:.2f}%',
+        f'Elastic Arms:\n10 cm: {percent_10cm_EA:.2f}%\n20 cm: {percent_20cm_EA:.2f}% \n 30cm: {percent_30cm_EA:.2f}%',
         fontsize=12, color='black')
 
-plt.text(50, hist_Model_all_res.max() * 0.35,
-        f'Model Pred.:\n10 cm: {percent_10cm_Model:.2f}%\n20 cm: {percent_20cm_Model:.2f}%',
+plt.text(15, hist_Model_all_res.max() * 0.35,
+        f'Model Pred.:\n10 cm: {percent_10cm_Model:.2f}%\n20 cm: {percent_20cm_Model:.2f}% \n 30cm: {percent_30cm_Model:.2f}%',
         fontsize=12, color='orange')
 
 #labels
+plt.title(flavors[FLUX])
 plt.xlabel('(Radial Distance) cm')
 plt.ylabel('Events')
-plt.text(0, hist_EA_all_res.max() * 0.75, '{} {}\nAll Interactions'.format(
-    DET, HORN), fontsize=8)
+plt.text(0, hist_EA_all_res.max() * 0.75, '{} {} {}\n All Interactions'.format(
+    DET, HORN, flavors[FLUX]), fontsize=7)
 plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
@@ -139,7 +158,7 @@ plt.subplots_adjust(bottom=0.15, left=0.15)
 # plt.show()
 for ext in ['pdf', 'png']:
     fig_resolution.savefig(
-        OUTDIR + '/plot_{}_Allmodes_Radial_Distance.'.format(str_det_horn) + ext,
+        OUTDIR + '/plot_{}_{}_Allmodes_Radial_Distance.'.format(str_det_horn, flavors[FLUX]) + ext,
         dpi=300)
 
 #For interaction types
@@ -228,19 +247,11 @@ for i in range(0, len(int_modes)):
     #Plot labels
     plt.xlabel('Radial Distance [cm]')
     plt.ylabel('Events')
-    plt.title('{} Interaction'.format(utils.plot.ModeType.name(i)))
-    plt.text(20, hist_EA.max()*0.55, '{} {}'.format(DET, HORN), fontsize=6)
-    plt.text(20, hist_EA.max()*0.35, 'Events within 10cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_10cm_EA, perc_10cm_Model) + 
+    plt.title('{} {} Interaction'.format(utils.plot.ModeType.name(i), flavors[FLUX]))
+    plt.text(0, hist_EA.max()*0.75, '{} {}'.format(DET, HORN), fontsize=7)
+    plt.text(20, hist_EA.max()*0.45, 'Events within 10cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_10cm_EA, perc_10cm_Model) + 
             'Events within 20cm: E.A. ({:.2f}%)\n  Model ({:.2f}%)\n'.format(perc_20cm_EA, perc_20cm_Model) +
-            'Events within 30cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_30cm_EA, perc_30cm_Model))
-
-    plt.xlabel('Radial Distance [cm]')
-    plt.ylabel('Events')
-    plt.title('{} Interactions'.format(utils.plot.ModeType.name(i)))
-    plt.text(20, hist_EA.max() * 0.70, '{} {}'.format(DET, HORN), fontsize=4)
-    plt.text(20, hist_EA.max() * 0.45, 'Events ≤10cm: E.A. {} / Model {}\nEvents ≤20cm: E.A. {} / Model {}\nEvents ≤30cm: E.A. {} / Model {}'.format(
-        count_10cm_EA, count_10cm_Model, count_20cm_EA, count_20cm_Model, count_30cm_EA, count_30cm_Model), fontsize=6)
-
+            'Events within 30cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_30cm_EA, perc_30cm_Model), fontsize=7)
 
     plt.legend(loc='upper right')
     plt.subplots_adjust(bottom=0.15, left=0.15)
@@ -249,9 +260,7 @@ for i in range(0, len(int_modes)):
     # plt.show()
     for ext in ['pdf', 'png']:
         fig_res_int.savefig(
-                           OUTDIR + '/plot_{}_{}_Interaction_Radial_Distance.'.format(str_det_horn, utils.plot.ModeType.name(i)) + ext,
+                           OUTDIR + '/plot_{}_{}_{}_Interaction_Radial_Distance.'.format(str_det_horn, utils.plot.ModeType.name(i), flavors[FLUX]) + ext,
                            dpi=300)
-        fig_res_int.savefig(OUTDIR + '/plot_{}_Radial_Distance_{}.'.format(str_det_horn,
-                                                                              utils.plot.ModeType.name(i)) + ext, dpi=300)
-
+        
 
