@@ -13,12 +13,12 @@
 
 # To run this script:  $PY37 preprocess_h5_file.py <infile_h5>
 
-
-
 import os
 import sys
 import h5py
 import numpy as np
+
+import utils.iomanager as io
 
 if __name__ == '__main__':
     # Terminal Arguments: input file [1]
@@ -27,8 +27,9 @@ if __name__ == '__main__':
     infile = inFilePath.split('/')[-1]
     # print('input path: ', inPath)
 
-    # this outPath is hard-coded, it's in "my" directory
-    outPath = '/home/k948d562/output/wsu-vertexer/preprocess'
+    # this outPath is
+    outPath = f'/home/{io.USER}/output/preprocess'
+    os.makedirs(outPath, exist_ok=True)
     outName = f'preprocessed_{infile}'
     print('Processing h5 file: ' + infile)
     print('Saving for training to ' + outPath)

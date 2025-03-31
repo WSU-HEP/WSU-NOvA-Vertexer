@@ -32,10 +32,10 @@ PREPROCESS_FILE=trimmed_h5_R20-11-25-prod5.1reco.j_$DET-Nominal-$HORN-${FLUX}_${
 
 outputfile=preprocess_${DET}_${HORN}_${FLUX}_file_${FILE_NUMBER}_date_${DATE}
 
-# the log files go into logs dir
-OUTDIR_PREFIX=/home/k948d562/output/wsu-vertexer/preprocess
+# the log files go into logs dir. note the h5 file is made from python script, not here.
+LOG_OUTDIR=/homes/${USER}/output/logs
 
-slurm_dir="/home/k948d562/slurm-scripts/"
+slurm_dir="/home/${USER}/slurm-scripts/"
 slurm_script="submit_slurm_${outputfile}.sh"
 
 cat > ${slurm_dir}/${slurm_script} <<EOF
@@ -55,23 +55,30 @@ cat > ${slurm_dir}/${slurm_script} <<EOF
 # 24 hours seems to be the edge, so add more...
 #SBATCH --time=48:00:00
 
-#SBATCH --output ${OUTDIR_PREFIX}/logs/${PREPROCESS_FILE}.out
-#SBATCH --error  ${OUTDIR_PREFIX}/logs/${PREPROCESS_FILE}.err
+#SBATCH --output ${LOG_OUTDIR}/logs/${PREPROCESS_FILE}.out
+#SBATCH --error  ${LOG_OUTDIR}/logs/${PREPROCESS_FILE}.err
 
-#SBATCH --nodes=2         # 2 if you can't guarantee your code can handle them. your current code cannot.
 #SBATCH --mem-per-cpu=40G # memory per CPU core
 #========================================================================================================
 
 
-# load modules
-module load Python/3.7.4-GCCcore-8.3.0
-module load TensorFlow/2.3.1-fosscuda-2019b-Python-3.7.4
-source /home/k948d562/virtual-envs/VirtualTensorFlow-Abdul/VirtualTensor/bin/activate
-/home/k948d562/virtual-envs/VirtualTensorFlow-Abdul/VirtualTensor/bin/python --version
+# setup environment using setup script.
+export WSUVTX="/homes/\$USER/WSU-NOvA-Vertexer"
+echo "WSUVTX is: \${WSUVTX}"
 
+source \$WSUVTX/setup_env.sh
+
+echo "/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/preprocess/preprocess_h5_file.py  \$PREPROCESS_FILE_PATH"
 
 #run python script
-/home/k948d562/virtual-envs/VirtualTensorFlow-Abdul/VirtualTensor/bin/python /home/k948d562/ml-vertexing/wsu-vertexer/preprocess/preprocess_h5_file.py  $PREPROCESS_FILE_PATH
+/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/preprocess/preprocess_h5_file.py  \$PREPROCESS_FILE_PATH
+
+# After the job finishes, log resource usage
+sleep 120
+echo "Job completed. Logging resource usage:"                    >> ${LOG_OUTDIR}/${outputfile}.out
+echo "sacct -j \$SLURM_JOB_ID --format=JobID,JobName,MaxRSS,MaxVMSize,NodeList,Elapsed,State "    >> ${LOG_OUTDIR}/${outputfile}.out
+sacct -j \$SLURM_JOB_ID --format=JobID,JobName,MaxRSS,MaxVMSize,NodeList,Elapsed,State >> ${LOG_OUTDIR}/${outputfile}.out
+
 EOF
 
 echo "Slurm script created: ${slurm_dir}/${slurm_script}"
