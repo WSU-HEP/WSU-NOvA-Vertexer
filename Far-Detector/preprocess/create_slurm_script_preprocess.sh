@@ -26,12 +26,11 @@ echo "Flux: $FLUX"
 echo "File number: $FILE_NUMBER"
 
 # The file to be processed. Much of this is hardcoded, so (path/filename) cannot be tampered with!
-PREPROCESS_FILE_PATH=/home/k948d562/NOvA-shared/$DET-Training-Samples/$DET-Nominal-$HORN-$FLUX/train/trimmed_h5_R20-11-25-prod5.1reco.j_$DET-Nominal-$HORN-${FLUX}_${FILE_NUMBER}_of_28.h5
+PREPROCESS_FILE_PATH=/home/k948d562/NOvA-shared/${DET}-Training-Samples/${DET}-Nominal-${HORN}-${FLUX}/train/trimmed_h5_R20-11-25-prod5.1reco.j_${DET}-Nominal-${HORN}-${FLUX}_${FILE_NUMBER}_of_28.h5
 echo "Preprocessing file to be created from script: $PREPROCESS_FILE_PATH"
-PREPROCESS_FILE=trimmed_h5_R20-11-25-prod5.1reco.j_$DET-Nominal-$HORN-${FLUX}_${FILE_NUMBER}_of_28.h5
 
+# used for the logs
 outputfile=preprocess_${DET}_${HORN}_${FLUX}_file_${FILE_NUMBER}_date_${DATE}
-
 # the log files go into logs dir. note the h5 file is made from python script, not here.
 LOG_OUTDIR=/homes/${USER}/output/logs
 
@@ -50,13 +49,13 @@ cat > ${slurm_dir}/${slurm_script} <<EOF
 
 #Run this script by [ $ sbatch $slurm_script ]
 #========================================================================================================
-#SBATCH --job-name=preprocess_${PREPROCESS_FILE}
+#SBATCH --job-name=preprocess_${outputfile}
 
 # 24 hours seems to be the edge, so add more...
 #SBATCH --time=48:00:00
 
-#SBATCH --output ${LOG_OUTDIR}/logs/${PREPROCESS_FILE}.out
-#SBATCH --error  ${LOG_OUTDIR}/logs/${PREPROCESS_FILE}.err
+#SBATCH --output ${LOG_OUTDIR}/logs/${outputfile}.out
+#SBATCH --error  ${LOG_OUTDIR}/logs/${outputfile}.err
 
 #SBATCH --mem-per-cpu=40G # memory per CPU core
 #========================================================================================================
