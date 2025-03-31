@@ -68,10 +68,10 @@ echo "WSUVTX is: \${WSUVTX}"
 
 source \$WSUVTX/setup_env.sh
 
-echo "/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/preprocess/preprocess_h5_file.py  \$PREPROCESS_FILE_PATH"
+echo "/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/preprocess/preprocess_h5_file.py  $PREPROCESS_FILE_PATH"
 
 #run python script
-/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/preprocess/preprocess_h5_file.py  \$PREPROCESS_FILE_PATH
+/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/preprocess/preprocess_h5_file.py  $PREPROCESS_FILE_PATH
 
 # After the job finishes, log resource usage
 sleep 120
