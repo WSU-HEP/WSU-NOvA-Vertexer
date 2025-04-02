@@ -347,7 +347,7 @@ for i in range(0, len(int_modes)):
     plt.ylabel('Events')
     plt.title(f'{utils.plot.ModeType.name(i)} Interactions')
     plt.text(20, hist_EA.max() * 0.55, f'{DET} {HORN}\n{C} coordinate', fontsize=8)
-    plt.text(20, hist_EA.max() * 0.45, f'Mean E.A.: {mean_int_EA:.2f} cm\nMean Model: {mean_int_EA:.2f} cm', fontsize=8)
+    plt.text(20, hist_EA.max() * 0.45, f'Mean E.A.: {mean_int_EA:.2f} cm\nMean Model: {mean_int_Model:.2f} cm', fontsize=8)
     plt.text(20, hist_EA.max() * 0.3, f'RMS E.A.: {rms_int_EA:.2f} cm\nRMS Model: {rms_int_Model:.2f} cm', fontsize=8)
     plt.legend(loc='upper right')
     plt.subplots_adjust(bottom=0.15, left=0.15)
