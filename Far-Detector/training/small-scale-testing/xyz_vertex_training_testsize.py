@@ -201,13 +201,13 @@ output_name = f'testsize_{args.epochs}epochs_{det}_{horn}_{flux}_{date.today()}_
 
 
 # save the model
-save_model_dir = '/home/k948d562/output/trained-models/'
+save_model_dir = f'/home/{io.USER}/output/trained-models/'
 model_regCNN.save(save_model_dir + f'model_{output_name}.h5')
 print('saved model to: ', save_model_dir + f'model_{output_name}.h5')
 # Items in the model file: <KeysViewHDF5 ['model_weights', 'optimizer_weights']>
 
 # outdir for testsize is different.
-save_metric_dir = f'/home/k948d562/output/metrics/small-scale-testing/{output_name}'
+save_metric_dir = f'/home/{io.USER}/output/metrics/small-scale-testing/{output_name}'
 
 # Evaluate the test set
 print('METRICS:')
@@ -220,6 +220,6 @@ metrics.to_csv(save_metric_dir + f'/metrics_{output_name}.csv', index_label='epo
 print('Saved metrics to: ', save_metric_dir + f'/metrics_{output_name}.csv')
 # NOTE: evaluation only returns ONE number for each metric , and one for the loss, so just write to txt file.
 
-plot_dir = '/home/k948d562/plots/ml-vertexing-plots/small-scale-testing/'
+plot_dir = f'/home/{io.USER}/plots/WSU-Vertexer-Plots/small-scale-testing/'
 utils.plot.plot_training_metrics(history, plot_dir, 'train_metrics_' + output_name)
 print('Done.')

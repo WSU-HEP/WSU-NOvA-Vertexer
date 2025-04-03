@@ -11,6 +11,7 @@
 #  we'll need to fix this if/when we have multiple files to load in...
 
 import os
+import sys
 
 import argparse
 import numpy as np
@@ -27,6 +28,10 @@ import utils.iomanager as io
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_file", help="the model file to generate predictions", default="", type=str)
 parser.add_argument("--outdir", help="the directory to save CSV file predictions", default="", type=str)
+meg = parser.add_mutually_exclusive_group()
+meg.add_argument("--nonswap",  required=False, default=False, action='store_true', help="For 'Combined' only, make predictions with the nonswap inference file")
+meg.add_argument("--fluxswap", required=False, default=False, action='store_true', help="For 'Combined' only, make predictions with the fluxswap inference file")
+
 args = parser.parse_args()
 
 # convert to the useful case
@@ -49,11 +54,23 @@ print("Model loaded successfully.")
 
 # Load the designated test file. This is file 27 -- has not been pre-processed; all info is in it.
 # NOTE: there is only one test file for the FD validation, and it should be within the "test" directory
-path_validation = f'/home/k948d562/NOvA-shared/FD-Training-Samples/{DETECTOR}-Nominal-{HORN}-{FLUX}/test/'
+
+# If you have 'Combined', determine which file to make predictions on: Fluxswap OR Nonswap.
+flavors = {'Nonswap': 'numus', 'Fluxswap': 'nues'}
+if FLUX == 'Combined' and args.nonswap == True:
+    FLUX = 'Nonswap'
+elif FLUX == 'Combined' and args.fluxswap == True:
+    FLUX = 'Fluxswap'
+else:
+    print('ERROR: Unknown flux option to predict. Exiting.')
+    sys.exit(1)
+
+print(f'Loading the {FLUX} file for model prediction')
+path_inference = f'/home/k948d562/NOvA-shared/FD-Training-Samples/{DETECTOR}-Nominal-{HORN}-{FLUX}/test/'
 
 
 # Read in the info from the validation file -- don't really care about the events & files here.
-datasets, _, _ = io.load_data(path_validation, True)
+datasets, _, _ = io.load_data(path_inference, True)
 
 # convert the lists to numpy arrays
 print('========================================')
@@ -187,6 +204,6 @@ print(df.columns)
 print('df', type(df))
 print('The first 10 rows of the CSV are:\n', df.iloc[:10,:])
 training_filename_prefix = training_filename_prefix.split('model_')[1]  # take off the 'model_' prefix
-fileName = f'model_prediction_{training_filename_prefix}.csv'
+fileName = f'model_prediction_{flavors[FLUX]}_{training_filename_prefix}.csv'
 df.to_csv(outdir + '/' + fileName, sep=',')
 print(f'Saved to: {outdir}/{fileName}')
