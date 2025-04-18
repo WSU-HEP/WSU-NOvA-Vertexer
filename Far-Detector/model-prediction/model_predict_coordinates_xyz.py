@@ -16,6 +16,7 @@ import sys
 import argparse
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 import time
 
@@ -47,10 +48,27 @@ coordinate = 'XYZ'
 
 print('Generating a prediction for this coordinate...')
 
-# Load the SavedModel
+# Load the SavedModel h5 file 
 print("Loading the model file to generate predictions: ", args.model_file)
-model = load_model(args.model_file, compile=False)
+#model = load_model(args.model_file, compile=False)
+#print("Model loaded successfully.")
+
+def load_frozen_graph(pb_file_path):
+    with tf.io.gfile.GFile(pb_file_path, "rb") as f:
+        graph_def = tf.compat.v1.GraphDef()
+        graph_def.ParseFromString(f.read())
+    with tf.Graph().as_default() as graph:
+        tf.import_graph_def(graph_def, name="")
+    return graph
+
+# Load the model
+print("Loading frozen .pb model from:", args.model_file)
+graph = load_frozen_graph(args.model_file)
 print("Model loaded successfully.")
+
+#print("\n🔍 First 10 operations in the graph:")
+#for op in list(graph.get_operations())[:10]:
+#    print(op.name)
 
 # Load the designated test file. This is file 27 -- has not been pre-processed; all info is in it.
 # NOTE: there is only one test file for the FD validation, and it should be within the "test" directory
