@@ -5,7 +5,7 @@
 # April 2025
 
 
-#  $ PY37 converting_h5_model_to_pb_model.py <path_to_h5_file>
+# $ PY37 converting_h5_model_to_pb_model.py <path_to_h5_file>
 
 
 
@@ -18,12 +18,12 @@ import sys
 def convert_h5_to_pb(h5_model_path):
     # Validate input path
     if not os.path.exists(h5_model_path) or not h5_model_path.endswith('.h5'):
-        raise ValueError("Please provide a valid .h5 model file path.")
+        raise ValueError("There is a need for h5 file path")
 
-    # Load the Keras model
+    # Loading the  model
     model = load_model(h5_model_path)
 
-    # Prepare input signatures based on model's input shapes
+    # Using model's shape as input signatures
     if isinstance(model.input_shape, list):
         input_signatures = [
             tf.TensorSpec(shape=[None, *shape[1:]], dtype=tf.float32)
@@ -36,7 +36,7 @@ def convert_h5_to_pb(h5_model_path):
     def model_fn(*inputs):
         return model(inputs)
 
-    # Get concrete function and freeze the model
+    # Get the  function and freeze the model
     concrete_func = model_fn.get_concrete_function()
     frozen_func = convert_variables_to_constants_v2(concrete_func)
 
