@@ -119,11 +119,11 @@ hist_Model_all_res, bins_Model_all_res, patches_Model_all_res = plt.hist(
 total_events = len(df)
 
 # Calculate total events within 10cm and 20cm for Elastic Arms
-events_within_10cm_EA = np.sum(EA_radial <= 10)
+events_within_10cm_EA = np.sum(EA_radial <= 13)
 events_within_20cm_EA = np.sum(EA_radial <= 20)
 events_within_30cm_EA = np.sum(EA_radial <= 30)
 # Calculate total events within 10cm and 20cm for Model Prediction
-events_within_10cm_Model = np.sum(model_radial <= 10)
+events_within_10cm_Model = np.sum(model_radial <= 13)
 events_within_20cm_Model = np.sum(model_radial <= 20)
 events_within_30cm_Model = np.sum(model_radial <= 30)
 
