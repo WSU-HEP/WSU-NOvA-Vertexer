@@ -119,34 +119,34 @@ hist_Model_all_res, bins_Model_all_res, patches_Model_all_res = plt.hist(
 total_events = len(df)
 
 # Calculate total events within 10cm and 20cm for Elastic Arms
-events_within_10cm_EA = np.sum(EA_radial <= 13)
+events_within_13cm_EA = np.sum(EA_radial <= 13)
 events_within_20cm_EA = np.sum(EA_radial <= 20)
 events_within_30cm_EA = np.sum(EA_radial <= 30)
 # Calculate total events within 10cm and 20cm for Model Prediction
-events_within_10cm_Model = np.sum(model_radial <= 13)
+events_within_13cm_Model = np.sum(model_radial <= 13)
 events_within_20cm_Model = np.sum(model_radial <= 20)
 events_within_30cm_Model = np.sum(model_radial <= 30)
 
 # Calculate percentages
-percent_10cm_EA = (events_within_10cm_EA / total_events) * 100
+percent_13cm_EA = (events_within_13cm_EA / total_events) * 100
 percent_20cm_EA = (events_within_20cm_EA / total_events) * 100
 percent_30cm_EA = (events_within_30cm_EA / total_events) * 100
-percent_10cm_Model = (events_within_10cm_Model / total_events) * 100
+percent_13cm_Model = (events_within_13cm_Model / total_events) * 100
 percent_20cm_Model = (events_within_20cm_Model / total_events) * 100
 percent_30cm_Model = (events_within_30cm_Model / total_events) * 100
 
 # Add percentages as text annotations
 plt.text(50, hist_EA_all_res.max() * 0.55,
-        f'Elastic Arms:\n10 cm: {percent_10cm_EA:.2f}%\n20 cm: {percent_20cm_EA:.2f}% \n 30cm: {percent_30cm_EA:.2f}%',
+        f'Elastic Arms:\n13 cm: {percent_13cm_EA:.2f}%\n20 cm: {percent_20cm_EA:.2f}% \n 30cm: {percent_30cm_EA:.2f}%',
         fontsize=12, color='black')
 
 plt.text(15, hist_Model_all_res.max() * 0.35,
-        f'Model Pred.:\n10 cm: {percent_10cm_Model:.2f}%\n20 cm: {percent_20cm_Model:.2f}% \n 30cm: {percent_30cm_Model:.2f}%',
+        f'Model Pred.:\n13 cm: {percent_13cm_Model:.2f}%\n20 cm: {percent_20cm_Model:.2f}% \n 30cm: {percent_30cm_Model:.2f}%',
         fontsize=12, color='orange')
 
 #labels
 plt.title(flavors[FLUX])
-plt.xlabel('(Radial Distance) cm')
+plt.xlabel('Euclidean Radial Distance [cm]')
 plt.ylabel('Events')
 plt.text(0, hist_EA_all_res.max() * 0.75, '{} {} {}\n All Interactions'.format(
     DET, HORN, flavors[FLUX]), fontsize=7)
@@ -224,11 +224,11 @@ for i in range(0, len(int_modes)):
         label='Model Pred.')
 
 
-    count_10cm_EA = np.sum(radial_dist_EA <= 10)
+    count_13cm_EA = np.sum(radial_dist_EA <= 13)
     count_20cm_EA = np.sum(radial_dist_EA <= 20)
     count_30cm_EA = np.sum(radial_dist_EA <= 30)
 
-    count_10cm_Model = np.sum(radial_dist_Model <= 10)
+    count_13cm_Model = np.sum(radial_dist_Model <= 13)
     count_20cm_Model = np.sum(radial_dist_Model <= 20)
     count_30cm_Model = np.sum(radial_dist_Model <= 30)
 
@@ -236,20 +236,20 @@ for i in range(0, len(int_modes)):
     total_event_EA = len(radial_dist_EA)
     total_event_Model= len(radial_dist_Model)
 
-    perc_10cm_EA = (count_10cm_EA/total_event_EA)*100 if total_event_EA > 0 else 0
+    perc_13cm_EA = (count_13cm_EA/total_event_EA)*100 if total_event_EA > 0 else 0
 
-    perc_10cm_Model = (count_10cm_Model/total_event_Model)*100 if total_event_Model > 0 else 0
+    perc_13cm_Model = (count_13cm_Model/total_event_Model)*100 if total_event_Model > 0 else 0
     perc_20cm_Model = (count_20cm_Model/total_event_Model)*100 if total_event_Model > 0 else 0
     perc_30cm_Model = (count_30cm_Model/total_event_Model)*100 if total_event_Model > 0 else 0
     perc_20cm_EA = (count_20cm_EA/total_event_EA)*100 if total_event_EA > 0 else 0
     perc_30cm_EA = (count_30cm_EA/total_event_EA)*100 if total_event_EA > 0 else 0
 
     #Plot labels
-    plt.xlabel('Radial Distance [cm]')
+    plt.xlabel('Euclidean Radial Distance [cm]')
     plt.ylabel('Events')
     plt.title('{} {} Interaction'.format(utils.plot.ModeType.name(i), flavors[FLUX]))
     plt.text(0, hist_EA.max()*0.75, '{} {}'.format(DET, HORN), fontsize=7)
-    plt.text(20, hist_EA.max()*0.45, 'Events within 10cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_10cm_EA, perc_10cm_Model) + 
+    plt.text(20, hist_EA.max()*0.45, 'Events within 13cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_13cm_EA, perc_13cm_Model) + 
             'Events within 20cm: E.A. ({:.2f}%)\n  Model ({:.2f}%)\n'.format(perc_20cm_EA, perc_20cm_Model) +
             'Events within 30cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_30cm_EA, perc_30cm_Model), fontsize=7)
 
