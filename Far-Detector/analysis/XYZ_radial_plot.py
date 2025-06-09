@@ -97,7 +97,20 @@ bins_resolution = np.arange(0, 100, 1)  # 1 bin per cm
 model_radial= np.sqrt(((df['Model Pred X'] - df['True X']) ** 2) + ((df['Model Pred Y'] - df['True Y']) ** 2) + ((df['Model Pred Z'] - df['True Z']) ** 2))
 EA_radial = np.sqrt(((df['Reco X'] - df['True X']) ** 2) + ((df['Reco Y'] - df['True Y']) ** 2) + ((df['Reco Z'] - df['True Z']) ** 2))
 
-# plot the (reco - true) vertex difference for both: Elastic Arms and Model Prediction
+
+
+#for xy, xz and yz radial plots
+xy_model_radial= np.sqrt(((df['Model Pred X'] - df['True X']) ** 2) + ((df['Model Pred Y'] - df['True Y']) ** 2))
+xy_EA_radial = np.sqrt(((df['Reco X'] - df['True X']) ** 2) + ((df['Reco Y'] - df['True Y']) ** 2))
+
+#for xz and yz
+xz_model_radial= np.sqrt(((df['Model Pred X'] - df['True X']) ** 2) + ((df['Model Pred Z'] - df['True Z']) ** 2))
+xz_EA_radial = np.sqrt(((df['Reco X'] - df['True X']) ** 2) + ((df['Reco Z'] - df['True Z']) ** 2))
+
+yz_model_radial= np.sqrt(((df['Model Pred Y'] - df['True Y']) ** 2) + ((df['Model Pred Z'] - df['True Z']) ** 2))
+yz_EA_radial = np.sqrt(((df['Reco Y'] - df['True Y']) ** 2) + ((df['Reco Z'] - df['True Z']) ** 2))
+
+# plot Euclidean Radial Distance  Elastic Arms and Model Prediction
 fig_resolution = plt.figure(figsize=(5, 3))
 
 hist_EA_all_res, bins_EA_all_res, patches_EA_all_res = plt.hist(
@@ -160,6 +173,44 @@ for ext in ['pdf', 'png']:
     fig_resolution.savefig(
         OUTDIR + '/plot_{}_{}_Allmodes_Radial_Distance.'.format(str_det_horn, flavors[FLUX]) + ext,
         dpi=300)
+
+
+#Plane data
+radial_data = {
+    'XY': (xy_EA_radial, xy_model_radial),
+    'XZ': (xz_EA_radial, xz_model_radial),
+    'YZ': (yz_EA_radial, yz_model_radial)
+}
+
+# For each of the plane loops
+for plane, (radial_dist_EA, radial_dist_Model) in radial_data.items():
+    if radial_dist_EA is not None and radial_dist_Model is not None:
+        # Events within 13 cm and 20 cm
+        count_13cm_EA = np.sum(radial_dist_EA <= 13)
+        count_20cm_EA = np.sum(radial_dist_EA <= 20)
+        count_13cm_Model = np.sum(radial_dist_Model <= 13)
+        count_20cm_Model = np.sum(radial_dist_Model <= 20)
+
+        print(f"{plane} Plane:")
+        print(f"  EA ≤13cm: {count_13cm_EA}, ≤20cm: {count_20cm_EA}")
+        print(f"  Model ≤13cm: {count_13cm_Model}, ≤20cm: {count_20cm_Model}\n")
+
+        # Plotting
+        fig_resolution = plt.figure(figsize=(5, 3))
+        plt.hist(radial_dist_EA, bins=bins_resolution, color='black', alpha=0.5, label='Elastic Arms', hatch='//')
+        plt.hist(radial_dist_Model, bins=bins_resolution, color='orange', alpha=0.5, label='Model Pred.')
+        plt.title(f'{plane} Plane Radial Distance')
+        plt.xlabel('Radial Distance (cm)')
+        plt.ylabel('Events')
+        plt.legend()
+        plt.tight_layout()
+
+        # Save figure
+        for ext in ['pdf', 'png']:
+            filename = f"{OUTDIR}/plot_{str_det_horn}_{flavors[FLUX]}_{plane}_Radial_Distance.{ext}"
+            fig_resolution.savefig(filename, dpi=300)
+
+        plt.close(fig_resolution)
 
 #For interaction types
 for i in range(0, len(int_modes)):
