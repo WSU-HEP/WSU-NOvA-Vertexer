@@ -210,8 +210,8 @@ for plane, (radial_dist_EA, radial_dist_Model) in radial_data.items():
         plt.hist(radial_dist_Model, bins=bins_resolution, color='orange', alpha=0.5, label='Model Pred.')
         plt.title(f'{plane} Plane Radial Distance')
         plt.title('{} {} Plane Radial Distance'.format(plane, flavors[FLUX]))
-        plt.text(0, hist_EA.max()*0.75, '{} {} {}'.format(DET, HORN, flavors[FLUX]), fontsize=7)
-        plt.text(20, hist_EA.max()*0.45, 'Events within 13cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_13cm_EA, perc_13cm_Model) +
+        plt.text(0, radial_dist_EA.max()*0.75, '{} {} {}'.format(DET, HORN, flavors[FLUX]), fontsize=7)
+        plt.text(20, radial_dist_EA.max()*0.45, 'Events within 13cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_13cm_EA, perc_13cm_Model) +
             'Events within 20cm: E.A. ({:.2f}%)\n  Model ({:.2f}%)\n'.format(perc_20cm_EA, perc_20cm_Model), fontsize=7)
         plt.xlabel('Radial Distance (cm)')
         plt.ylabel('Events')
