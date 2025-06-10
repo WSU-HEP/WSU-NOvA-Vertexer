@@ -18,6 +18,7 @@
 
 
 import os
+import sys
 import argparse
 import h5py
 import matplotlib.pyplot as plt
@@ -37,6 +38,10 @@ parser.add_argument("--coordinate", help="the coordinate you want to plot", defa
 parser.add_argument("--test_file", help="full path to file used for testing/inference",
                     default="/home/k948d562/NOvA-shared/FD-Training-Samples/{}-Nominal-{}-{}/test/trimmed_h5_R20-11-25-prod5.1reco.j_{}-Nominal-{}-{}_27_of_28.h5",
                     type=str)
+
+meg = parser.add_mutually_exclusive_group()
+meg.add_argument("--nonswap",  required=False, default=False, action='store_true', help="For 'Combined' only, make predictions with the nonswap inference file")
+meg.add_argument("--fluxswap", required=False, default=False, action='store_true', help="For 'Combined' only, make predictions with the fluxswap inference file")
 args = parser.parse_args()
 
 args.pred_file = args.pred_file
@@ -54,9 +59,12 @@ colors = utils.plot.NuModeColors()
 print(f'pred_file: {args.pred_file}')
 print(f'Making plots for coordinate {C}.....')
 
+# vars to save the column name strings of DataFrame.
 true_C = f'True {C}'
 reco_C = f'Reco {C}'
 model_C = f'Model Pred {C}'
+abs_vtx_diff_EA_C = f'AbsVtxDiff.EA.{C}'
+abs_vtx_diff_model_C = f'AbsVtxDiff.Model.{C}'
 
 # filename without the CSV and path.
 pred_filename_prefix = args.pred_file.split('/')[-1].split('.')[0]  # get the filename only and remove the .csv
@@ -64,6 +72,18 @@ DET, HORN, FLUX = io.IOManager.get_det_horn_and_flux_from_string(args.pred_file)
 
 # load the CSV file of the model predictions.
 df = dp.ModelPrediction.load_pred_csv_file(args.pred_file)
+
+
+# If you have 'Combined', determine which file to make predictions on: Fluxswap OR Nonswap.
+flavors = {'Nonswap': 'numus', 'Fluxswap': 'nues'}
+if FLUX == 'Combined' and args.nonswap == True:
+    FLUX = 'Nonswap'
+elif FLUX == 'Combined' and args.fluxswap == True:
+    FLUX = 'Fluxswap'
+else:
+    print('ERROR: Unknown flux option to predict. Exiting.')
+    sys.exit(1)
+
 
 # want the mode from the test file (same one used to make the predictions).
 test_file = args.test_file.format(DET, HORN, FLUX, DET, HORN, FLUX)
@@ -138,7 +158,7 @@ for i in range(0, len(int_modes)):
 plt.title('Elastic Arms Vertex Resolution')
 plt.xlabel(f'Reco. - True Vertex {C} [cm]')
 plt.ylabel('Events')
-plt.text(15, 9e3, f'{DET} {HORN}\nElastic Arms\n{C} coordinate', fontsize=12)
+plt.text(15, 9e3, f'{DET} {HORN}_{flavors[FLUX]}\nElastic Arms\n{C} coordinate', fontsize=12)
 plt.text(15, 5e3, f'Mean: {mean_EA:.2f} cm\nRMS: {rms_EA:.2f} cm', fontsize=12)
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
@@ -146,7 +166,7 @@ plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 # plt.show()
 for ext in ['pdf', 'png']:
     fig_res_int_EA.savefig(
-        OUTDIR + f'/plot_{str_det_horn}_allmodes_Resolution_{C}_ElasticArms.' + ext, dpi=300)
+        OUTDIR + f'/plot_{str_det_horn}_{flavors[FLUX]}_allmodes_Resolution_{C}_ElasticArms.' + ext, dpi=300)
 plt.close(fig_res_int_EA)
 
 # Model Prediction, ONLY
@@ -165,7 +185,7 @@ for i in range(0, len(int_modes)):
 plt.title('Model Prediction Resolution')
 plt.xlabel(f'Reco. - True Vertex {C} [cm]')
 plt.ylabel('Events')
-plt.text(25, 15e3, f'{DET} {HORN}\nModel Prediction\n{C} coordinate', fontsize=12)
+plt.text(25, 15e3, f'{DET} {HORN}_{flavors[FLUX]}\nModel Prediction\n{C} coordinate', fontsize=12)
 plt.text(25, 5e3, f'Mean: {mean_Model:.2f} cm\nRMS: {rms_Model:.2f} cm', fontsize=12)
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
@@ -173,7 +193,7 @@ plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 # plt.show()
 for ext in ['pdf', 'png']:
     fig_res_int_Model.savefig(
-        OUTDIR + f'/plot_{str_det_horn}_allmodes_Resolution_{C}_ModelPred.' + ext, dpi=300)
+        OUTDIR + f'/plot_{str_det_horn}_{flavors[FLUX]}_allmodes_Resolution_{C}_ModelPred.' + ext, dpi=300)
 plt.close(fig_res_int_Model)
 # ------------- All interactions separate model end -------------
 
@@ -181,14 +201,14 @@ plt.close(fig_res_int_Model)
 # Abs(resolution)
 # plot the abs(reco - true) vertex difference for both: Elastic Arms and Model Prediction
 fig_resolution = plt.figure(figsize=(5, 3))
-hist_EA_abs, bins_EA_abs, patches_EA_abs = plt.hist(df[f'AbsVtxDiff.EA.{C}'],
+hist_EA_abs, bins_EA_abs, patches_EA_abs = plt.hist(df[abs_vtx_diff_EA_C],
                                         bins=bins_abs_resolution,
                                         range=(-50, 50),
                                         color='black',
                                         alpha=0.5,
                                         label='Elastic Arms',
                                         hatch='//')
-hist_Model_abs, bins_Model_abs, patches_Model_abs = plt.hist(df[f'AbsVtxDiff.Model.{C}'],
+hist_Model_abs, bins_Model_abs, patches_Model_abs = plt.hist(df[abs_vtx_diff_model_C],
                                                  bins=bins_abs_resolution,
                                                  range=(-50, 50),
                                                  color='orange',
@@ -196,14 +216,14 @@ hist_Model_abs, bins_Model_abs, patches_Model_abs = plt.hist(df[f'AbsVtxDiff.Mod
                                                  label='Model Pred.')
 plt.xlabel('|Reco - True| Vertex [cm]')
 plt.ylabel('Events')
-plt.text(30, hist_EA_abs.max() * 0.6, f'{DET} {HORN}\nAll Interactions\n {C} coordinate', fontsize=8)
-plt.text(30, hist_EA_abs.max() * 0.45, f'Mean E.A.: {df[f'AbsVtxDiff.EA.{C}'].mean():.2f} cm\nMean Model: {df[f'AbsVtxDiff.Model.{C}'].mean():.2f} cm', fontsize=8)
+plt.text(30, hist_EA_abs.max() * 0.6, f'{DET} {HORN}_{flavors[FLUX]}\nAll Interactions\n {C} coordinate', fontsize=8)
+plt.text(30, hist_EA_abs.max() * 0.45, f'Mean E.A.: {df[abs_vtx_diff_EA_C].mean():.2f} cm\nMean Model: {df[abs_vtx_diff_model_C].mean():.2f} cm', fontsize=8)
 plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
 # plt.show()
 for ext in ['pdf', 'png']:
-    fig_resolution.savefig(OUTDIR + f'/plot_{str_det_horn}_allmodes_{C}_AbsResolution.' + ext, dpi=300)
+    fig_resolution.savefig(OUTDIR + f'/plot_{str_det_horn}_{flavors[FLUX]}_allmodes_{C}_AbsResolution.' + ext, dpi=300)
 plt.close(fig_resolution)
 
 # Resolution
@@ -228,7 +248,7 @@ plt.text(14, 4e4, f'Mean E.A.: {mean_EA:.2f} cm\nRMS E.A.: {rms_EA:.2f} cm', fon
 plt.text(14, 2e4, f'Mean Model: {mean_Model:.2f} cm\nRMS Model: {rms_Model:.2f} cm', fontsize=8)
 plt.xlabel(f'(Reco - True) Vertex {C} [cm]')
 plt.ylabel('Events')
-plt.text(-40, hist_EA_all_res.max() * 0.75, f'{DET} {HORN}\nAll Interactions\n {C} coordinate', fontsize=8)
+plt.text(-40, hist_EA_all_res.max() * 0.75, f'{DET} {HORN}_{flavors[FLUX]}\nAll Interactions\n {C} coordinate', fontsize=8)
 plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
 plt.legend(loc='upper right')
 plt.subplots_adjust(bottom=0.15, left=0.15)
@@ -236,7 +256,7 @@ plt.subplots_adjust(bottom=0.15, left=0.15)
 # plt.show()
 for ext in ['pdf', 'png']:
     fig_resolution.savefig(
-        OUTDIR + f'/plot_{str_det_horn}_allmodes_{C}_Resolution.' + ext,
+        OUTDIR + f'/plot_{str_det_horn}_{flavors[FLUX]}_allmodes_{C}_Resolution.' + ext,
         dpi=300)
 plt.close(fig_resolution)
 
@@ -259,7 +279,7 @@ hist_Model_all_relres, bins_Model_all_relres, patches_Model_all_relres = plt.his
     label='Model Pred.')
 plt.xlabel(f'(Reco - True)/True {C}')
 plt.ylabel('Events')
-plt.text(0.05, hist_EA_all_relres.max() * 0.7, f'{DET} {HORN}\nAll Interactions\n {C} coordinate', fontsize=8)
+plt.text(0.05, hist_EA_all_relres.max() * 0.7, f'{DET} {HORN}_{flavors[FLUX]}\nAll Interactions\n {C} coordinate', fontsize=8)
 plt.text(0.05,hist_EA_all_relres.max() * 0.5,
          f'Mean E.A.: {mean_float_EA_all_relres:.2f} cm\nMean Model: {mean_float_Model_all_relres:.2f} cm',
          fontsize=8)
@@ -269,7 +289,7 @@ plt.subplots_adjust(bottom=0.15, left=0.15)
 # plt.show()
 for ext in ['pdf', 'png']:
     fig_resolution.savefig(
-        OUTDIR + f'/plot_{str_det_horn}_allmodes_{C}_RelResolution.' + ext, dpi=300)
+        OUTDIR + f'/plot_{str_det_horn}_{flavors[FLUX]}_allmodes_{C}_RelResolution.' + ext, dpi=300)
 plt.close(fig_resolution)
 # ------------ Individual interactions Overlaid, Model + E.A., [Abs, Res, RelRes]  -------------
 
@@ -285,14 +305,14 @@ for i in range(0, len(int_modes)):
         continue
     fig_resolution_int = plt.figure(figsize=(5, 3))
     df_mode = df_modes[i]  # need to save the dataframe to a variable
-    hist_EA, bins, patches = plt.hist(df_mode[f'AbsVtxDiff.EA.{C}'],
+    hist_EA, bins, patches = plt.hist(df_mode[abs_vtx_diff_EA_C],
                                       bins=bins_abs_resolution,
                                       range=(-50, 50),
                                       color=colors.get_color(utils.plot.ModeType.name(i), False),
                                       alpha=0.5,
                                       label='Elastic Arms',
                                       hatch='//')
-    hist_Model, bins_Model, patches_Model = plt.hist(df_mode[f'AbsVtxDiff.Model.{C}'],
+    hist_Model, bins_Model, patches_Model = plt.hist(df_mode[abs_vtx_diff_model_C],
                                                      bins=bins_abs_resolution,
                                                      range=(-50, 50),
                                                      color=colors.get_color(utils.plot.ModeType.name(i), True),
@@ -302,14 +322,14 @@ for i in range(0, len(int_modes)):
     plt.title(f'{utils.plot.ModeType.name(i)} Interactions')
     plt.xlabel('|Reco.  - True| Vertex [cm]')
     plt.ylabel('Events')
-    plt.text(35, hist_EA.max() * 0.6, f'{DET} {HORN}\n{C} coordinate', fontsize=8)
-    plt.text(35, hist_EA.max() * 0.45, f'Mean E.A.: {df_mode['AbsVtxDiff.EA.{C}'].mean():.2f} cm\nMean Model: {df_mode['AbsVtxDiff.Model.{C}'].mean():.2f} cm', fontsize=8)
+    plt.text(35, hist_EA.max() * 0.6, f'{DET} {HORN}_{flavors[FLUX]}\n{C} coordinate', fontsize=8)
+    plt.text(35, hist_EA.max() * 0.45, f'Mean E.A.: {df_mode[abs_vtx_diff_EA_C].mean():.2f} cm\nMean Model: {df_mode[abs_vtx_diff_model_C].mean():.2f} cm', fontsize=8)
     plt.legend(loc='upper right')
     plt.subplots_adjust(bottom=0.15, left=0.15)
     plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
     # plt.show()
     for ext in ['pdf', 'png']:
-        fig_resolution_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{C}_AbsResolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
+        fig_resolution_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{flavors[FLUX]}_{C}_AbsResolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
     plt.close(fig_resolution_int)
 
 # FOR EACH INTERACTION TYPE
@@ -343,15 +363,15 @@ for i in range(0, len(int_modes)):
     plt.xlabel('Reco. - True Vertex [cm]')
     plt.ylabel('Events')
     plt.title(f'{utils.plot.ModeType.name(i)} Interactions')
-    plt.text(20, hist_EA.max() * 0.55, f'{DET} {HORN}\n{C} coordinate', fontsize=8)
-    plt.text(20, hist_EA.max() * 0.45, f'Mean E.A.: {mean_int_EA:.2f} cm\nMean Model: {mean_int_EA:.2f} cm', fontsize=8)
+    plt.text(20, hist_EA.max() * 0.55, f'{DET} {HORN}_{flavors[FLUX]}\n{C} coordinate', fontsize=8)
+    plt.text(20, hist_EA.max() * 0.45, f'Mean E.A.: {mean_int_EA:.2f} cm\nMean Model: {mean_int_Model:.2f} cm', fontsize=8)
     plt.text(20, hist_EA.max() * 0.3, f'RMS E.A.: {rms_int_EA:.2f} cm\nRMS Model: {rms_int_Model:.2f} cm', fontsize=8)
     plt.legend(loc='upper right')
     plt.subplots_adjust(bottom=0.15, left=0.15)
     plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
     # plt.show()
     for ext in ['pdf', 'png']:
-        fig_res_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{C}_Resolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
+        fig_res_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{flavors[FLUX]}_{C}_Resolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
         plt.close(fig_res_int)
 
 # FOR EACH INTERACTION TYPE
@@ -382,14 +402,14 @@ for i in range(0, len(int_modes)):
     plt.xlabel(f'(Reco - True)/True Vertex {C}')
     plt.ylabel('Events')
     plt.title(f'{utils.plot.ModeType.name(i)} Interactions')
-    plt.text(0.05, hist_EA.max() * 0.55, f'{DET} {HORN}\n{C} coordinate', fontsize=8)
+    plt.text(0.05, hist_EA.max() * 0.55, f'{DET} {HORN} {flavors[FLUX]}\n{C} coordinate', fontsize=8)
     plt.text(0.05, hist_EA.max() * 0.4, f'Mean E.A.: {mean_EA_int_relres:.2f} cm\nMean Model: {mean_Model_int_relres:.2f} cm', fontsize=8)
     plt.legend(loc='upper right')
     plt.subplots_adjust(bottom=0.15, left=0.15)
     plt.grid(color='black', linestyle='--', linewidth=0.25, axis='both')
     # plt.show()
     for ext in ['pdf', 'png']:
-        fig_res_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{C}_RelResolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
+        fig_res_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{flavors[FLUX]}_{C}_RelResolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
     plt.close(fig_res_int)
 
 print('Done!')
