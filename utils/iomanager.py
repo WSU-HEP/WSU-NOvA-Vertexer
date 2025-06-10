@@ -6,6 +6,10 @@ import os
 import psutil
 import time
 
+
+# create user variable
+USER = os.environ['USER']
+
 # Print memory usage
 def print_memory_usage():
     mem = psutil.virtual_memory()

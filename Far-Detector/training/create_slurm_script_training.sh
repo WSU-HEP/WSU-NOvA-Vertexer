@@ -22,7 +22,7 @@ fi
 COORDINATE=$1 # x, y, z, or xyz
 DET=$2        # ND or FD
 HORN=$3       # FHC or RHC
-FLUX=$4       # Nonswap, Fluxswap, combined (both numu+nue)
+FLUX=$4       # Nonswap, Fluxswap, Combined (both numu+nue)
 EPOCHS=$5     # number of epochs to train for
 
 # convert to lowercase, upper, and capitalize
@@ -107,6 +107,10 @@ export PYTHONPATH="/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/lib/python3.1
 echo "PYTHONPATH is ... \$PYTHONPATH"
 
 export LD_LIBRARY_PATH="/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/lib:\$LD_LIBRARY_PATH"
+
+
+export TF_ENABLE_ONEDNN_OPTS=0
+echo "TF_ENABLE_ONEDNN_OPTS = \${TF_ENABLE_ONEDNN_OPTS}"
 
 
 echo "/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS"
