@@ -97,6 +97,9 @@ echo "PYTHONPATH is ... \$PYTHONPATH"
 
 export LD_LIBRARY_PATH="/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/lib:\$LD_LIBRARY_PATH"
 
+export TF_ENABLE_ONEDNN_OPTS=0
+echo "TF_ENABLE_ONEDNN_OPTS = \${TF_ENABLE_ONEDNN_OPTS}"
+
 echo "/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS"
 #run python script
 /homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS
