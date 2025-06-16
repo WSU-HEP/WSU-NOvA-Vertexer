@@ -90,12 +90,25 @@ test_file = args.test_file.format(DET, HORN, FLUX, DET, HORN, FLUX)
 print(f'test_file: {test_file}')
 with h5py.File(test_file, mode='r') as f:
     df_mode = pd.DataFrame({'Mode': f['mode'][:]})
+    df_iscc = pd.DataFrame({'iscc': f['iscc'][:]})
+
+    print(f"'iscc' dataset shape: {df_iscc.shape}")
+
+
+    cc_counts = df_iscc['iscc'].value_counts().sort_index()
+    print("CC vs Non-CC event counts:")
+    print(cc_counts)
+
+    # Print first 5 rows and first 10 columns (if available)
+    print("Head of 'iscc' (first 5 rows and up to 10 columns):")
+    print(df_iscc.iloc[:5, :10])
+
 
 # define path to save some plots (the local dir).
 vtx_abs_diff_ea_temp, vtx_abs_diff_model_temp = dp.ModelPrediction.create_abs_vtx_diff_columns(df, C)
-
+#df_isCC['Intermode'] = df_iscc['CC'].apply(lambda x: 'CC' if x == 1 else 'NC')
 # new additions to the main DataFrame as new columns
-df = pd.concat([df, vtx_abs_diff_ea_temp, vtx_abs_diff_model_temp, df_mode], axis=1)
+df = pd.concat([df, vtx_abs_diff_ea_temp, vtx_abs_diff_model_temp, df_mode, df_iscc], axis=1)
 
 # list of dataframes for each mode has both NC and CC.
 print("Creating 'df_modes'...........")
@@ -411,5 +424,106 @@ for i in range(0, len(int_modes)):
     for ext in ['pdf', 'png']:
         fig_res_int.savefig(OUTDIR + f'/plot_{str_det_horn}_{flavors[FLUX]}_{C}_RelResolution_{utils.plot.ModeType.name(i)}.' + ext, dpi=300)
     plt.close(fig_res_int)
+
+
+#Creating for NC and CC
+# --- Define plot function ---
+def plot_resolution(df_subset, title_label):
+    if df_subset.empty:
+        print(f"Skipping empty subset: {title_label}")
+        return
+
+    mean_EA = np.mean(df_subset[reco_C] - df_subset[true_C])
+    rms_EA = np.std(df_subset[reco_C] - df_subset[true_C])
+    mean_Model = np.mean(df_subset[model_C] - df_subset[true_C])
+    rms_Model = np.std(df_subset[model_C] - df_subset[true_C])
+
+    fig = plt.figure(figsize=(5, 3))
+
+    hist_mode_iscc_ea, _, _ =plt.hist(df_subset[reco_C] - df_subset[true_C],
+             bins=bins_resolution,
+             color='black',
+             alpha=0.5,
+             label='Elastic Arms',
+             hatch='//')
+
+    hist_mode_iscc_model, _, _ =plt.hist(df_subset[model_C] - df_subset[true_C],
+             bins=bins_resolution,
+             color='orange',
+             alpha=0.5,
+             label='Model Pred.')
+
+    plt.text(15, hist_mode_iscc_ea.max() * 0.55, f'Mean E.A.: {mean_EA:.2f} cm\nRMS E.A.: {rms_EA:.2f} cm', fontsize=8)
+    plt.text(15, hist_mode_iscc_ea.max() * 0.45, f'Mean Model: {mean_Model:.2f} cm\nRMS Model: {rms_Model:.2f} cm', fontsize=8)
+    plt.text(-40, hist_mode_iscc_ea.max() * 0.3, f'{DET} {HORN} {flavors[FLUX]}\n{C} coordinate', fontsize=8)
+
+    plt.xlabel(f'(Reco - True) Vertex {C} [cm]')
+    plt.ylabel('Events')
+    plt.title(f'{title_label} Resolution')
+    plt.grid(color='black', linestyle='--', linewidth=0.25)
+    plt.legend(loc='upper right')
+    plt.subplots_adjust(bottom=0.15, left=0.15)
+
+    for ext in ['png', 'pdf']:
+        fig.savefig(f'{OUTDIR}/plot_{str_det_horn}_{flavors[FLUX]}_{title_label.lower()}_{C}_resolution.{ext}', dpi=300)
+
+    plt.close(fig)
+
+# --- Plot all CC and all NC ---
+plot_resolution(df[df['iscc'] == 1], 'CC_All')
+plot_resolution(df[df['iscc'] == 0], 'NC_All')
+
+
+# --- Plot CC and NC by mode ---
+for iscc_val, iscc_label in [(1, 'CC'), (0, 'NC')]:
+    for mode in int_modes:
+        mode_label = utils.plot.ModeType.name(mode)  # Converts 0 → 'QE', etc.
+        subset = df[(df['iscc'] == iscc_val) & (df['Mode'] == mode)]
+        plot_resolution(subset, f'{iscc_label}_{mode_label}')
+
+# --- Define plot function ---
+#def plot_resolution(df_subset, title_label):
+#    if df_subset.empty:
+#        print(f"Skipping empty subset: {title_label}")
+#        return
+
+#    mean_EA = np.mean(df_subset[reco_C] - df_subset[true_C])
+#    rms_EA = np.std(df_subset[reco_C] - df_subset[true_C])
+#    mean_Model = np.mean(df_subset[model_C] - df_subset[true_C])
+#    rms_Model = np.std(df_subset[model_C] - df_subset[true_C])
+
+#    fig = plt.figure(figsize=(5, 3))
+
+#    plt.hist(df_subset[reco_C] - df_subset[true_C],
+#             bins=bins_resolution,
+#             color='black',
+#             alpha=0.5,
+#             label='Elastic Arms',
+#             hatch='//')
+
+#    plt.hist(df_subset[model_C] - df_subset[true_C],
+#             bins=bins_resolution,
+#             color='orange',
+#             alpha=0.5,
+#             label='Model Pred.')
+
+#    plt.text(14, 4e4, f'Mean E.A.: {mean_EA:.2f} cm\nRMS E.A.: {rms_EA:.2f} cm', fontsize=8)
+#    plt.text(14, 2e4, f'Mean Model: {mean_Model:.2f} cm\nRMS Model: {rms_Model:.2f} cm', fontsize=8)
+
+#    plt.xlabel(f'(Reco - True) Vertex {C} [cm]')
+#    plt.ylabel('Events')
+#    plt.title(f'{title_label} - {C} Resolution')
+#    plt.grid(color='black', linestyle='--', linewidth=0.25)
+#    plt.legend(loc='upper right')
+#    plt.subplots_adjust(bottom=0.15, left=0.15)
+
+#    for ext in ['png', 'pdf']:
+#        fig.savefig(f'{OUTDIR}/plot_{str_det_horn}_{flavors[FLUX]}_{title_label.lower()}_{C}_resolution.{ext}', dpi=300)
+
+#    plt.close(fig)
+
+# --- Plot all CC and all NC ---
+#plot_resolution(df[df['iscc'] == 1], 'CC_All')
+#plot_resolution(df[df['iscc'] == 0], 'NC_All')
 
 print('Done!')
