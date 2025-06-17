@@ -73,6 +73,13 @@ test_file = args.test_file.format(DET, HORN, FLUX, DET, HORN, FLUX)
 print('test_file:{}'.format(test_file))
 with h5py.File(test_file, mode='r') as f:
     df_mode = pd.DataFrame({'Mode': f['mode'][:]})
+    df_iscc = pd.DataFrame({'iscc': f['iscc'][:]})
+
+    print(f"'iscc' dataset shape:{df_iscc.shape}")
+
+    cc_count = df_iscc['iscc'].value_counts().sort_index()
+    print("CC vs NC events counts:")
+    print(cc_count)
 
 # output directory
 print('Output Directory: ', args.outdir)
@@ -80,7 +87,7 @@ OUTDIR = utils.plot.make_output_dir(args.outdir, 'radial', pred_filename_prefix)
 str_det_horn = '{}_{}_'.format(DET, HORN)
 
 
-df=pd.concat([df, df_mode], axis=1)
+df=pd.concat([df, df_mode, df_iscc], axis=1)
 df_modes=list()
 for i in range(len(int_modes)):
     print('Int Type, Code: ', utils.plot.ModeType.name(i), '', int_modes[i])
@@ -211,7 +218,7 @@ for plane, (radial_dist_EA, radial_dist_Model) in radial_data.items():
         plt.title(f'{plane} Plane Radial Distance')
         plt.title('{} {} Plane Radial Distance'.format(plane, flavors[FLUX]))
         plt.text(0, radial_dist_EA.max()*0.75, '{} {} {}'.format(DET, HORN, flavors[FLUX]), fontsize=7)
-        plt.text(20, radial_dist_EA.max()*0.45, 'Events within 13cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_13cm_EA, perc_13cm_Model) +
+        plt.text(50, radial_dist_EA.max()*0.45, 'Events within 13cm: E.A. ({:.2f}%)\n Model ({:.2f}%)\n'.format(perc_13cm_EA, perc_13cm_Model) +
             'Events within 20cm: E.A. ({:.2f}%)\n  Model ({:.2f}%)\n'.format(perc_20cm_EA, perc_20cm_Model), fontsize=7)
         plt.xlabel('Radial Distance (cm)')
         plt.ylabel('Events')
@@ -329,4 +336,99 @@ for i in range(0, len(int_modes)):
                            OUTDIR + '/plot_{}_{}_{}_Interaction_Radial_Distance.'.format(str_det_horn, utils.plot.ModeType.name(i), flavors[FLUX]) + ext,
                            dpi=300)
         
+#for CC and NC
+def plot_radial_plane(df_subset, title_label, plane='XYZ'):
+    if df_subset.empty:
+        print(f"Skipping empty subset: {title_label} ({plane})")
+        return
 
+    # Select plane-specific distances
+    if plane == 'XY':
+        ea_diff = np.sqrt((df_subset['Reco X'] - df_subset['True X'])**2 +
+                          (df_subset['Reco Y'] - df_subset['True Y'])**2)
+        model_diff = np.sqrt((df_subset['Model Pred X'] - df_subset['True X'])**2 +
+                             (df_subset['Model Pred Y'] - df_subset['True Y'])**2)
+    elif plane == 'YZ':
+        ea_diff = np.sqrt((df_subset['Reco Y'] - df_subset['True Y'])**2 +
+                          (df_subset['Reco Z'] - df_subset['True Z'])**2)
+        model_diff = np.sqrt((df_subset['Model Pred Y'] - df_subset['True Y'])**2 +
+                             (df_subset['Model Pred Z'] - df_subset['True Z'])**2)
+    elif plane == 'XZ':
+        ea_diff = np.sqrt((df_subset['Reco X'] - df_subset['True X'])**2 +
+                          (df_subset['Reco Z'] - df_subset['True Z'])**2)
+        model_diff = np.sqrt((df_subset['Model Pred X'] - df_subset['True X'])**2 +
+                             (df_subset['Model Pred Z'] - df_subset['True Z'])**2)
+    else:  # XYZ
+        ea_diff = np.sqrt((df_subset['Reco X'] - df_subset['True X'])**2 +
+                          (df_subset['Reco Y'] - df_subset['True Y'])**2 +
+                          (df_subset['Reco Z'] - df_subset['True Z'])**2)
+        model_diff = np.sqrt((df_subset['Model Pred X'] - df_subset['True X'])**2 +
+                             (df_subset['Model Pred Y'] - df_subset['True Y'])**2 +
+                             (df_subset['Model Pred Z'] - df_subset['True Z'])**2)
+
+    # Count percentages
+    total_events = len(df_subset)
+    ea_13_pct = 100 * (np.sum(ea_diff < 13) / total_events)
+    ea_20_pct = 100 * (np.sum(ea_diff < 20) / total_events)
+    model_13_pct = 100 * (np.sum(model_diff < 13) / total_events)
+    model_20_pct = 100 * (np.sum(model_diff < 20) / total_events)
+
+    fig = plt.figure(figsize=(5, 3))
+
+    hist_EA, _, _ = plt.hist(ea_diff,
+                             bins=bins_resolution,
+                             color='black',
+                             alpha=0.5,
+                             label='Elastic Arms',
+                             hatch='//')
+
+    plt.hist(model_diff,
+             bins=bins_resolution,
+             color='orange',
+             alpha=0.5,
+             label='Model Pred.')
+
+    y_max = max(hist_EA)
+
+    # Show percentages
+    plt.text(50, y_max * 0.65,
+             f'E.A.: 13cm = {ea_13_pct:.1f}%\n 20cm = {ea_20_pct:.1f}%',
+             fontsize=8)
+    plt.text(50, y_max * 0.45,
+             f'Model: 13cm = {model_13_pct:.1f}%\n 20cm = {model_20_pct:.1f}%',
+             fontsize=8)
+    plt.text(5, y_max * 0.2,
+             f'{DET} {HORN} {flavors[FLUX]}\n{plane} Plane',
+             fontsize=8)
+
+
+    plt.xlabel(f'Radial Distance ({plane}) [cm]')
+    plt.ylabel('Events')
+    plt.title(f'{title_label} - {plane} Plot')
+    plt.grid(color='black', linestyle='--', linewidth=0.25)
+    plt.legend(loc='upper right')
+    plt.subplots_adjust(bottom=0.15, left=0.15)
+
+    for ext in ['png', 'pdf']:
+        fig.savefig(
+            f'{OUTDIR}/plot_{str_det_horn}_{flavors[FLUX]}_{title_label.lower()}_{plane.lower()}_radial_resolution.{ext}',
+            dpi=300)
+
+    plt.close(fig)
+    
+    
+#for the planes and radial plots for NC and CC
+for plane in ['XY', 'XZ', 'YZ', 'XYZ']:
+    plot_radial_plane(df[df['iscc'] == 1], 'CC_All', plane)
+    plot_radial_plane(df[df['iscc'] == 0], 'NC_All', plane)
+
+# --- Plot CC and NC by mode and plane ---
+for iscc_val, iscc_label in [(1, 'CC'), (0, 'NC')]:
+    for mode in int_modes:
+        mode_label = utils.plot.ModeType.name(mode)  # e.g., 'QE', 'DIS'
+        subset = df[(df['iscc'] == iscc_val) & (df['Mode'] == mode)]
+
+        for plane in ['XY', 'XZ', 'YZ', 'XYZ']:
+            plot_radial_plane(subset, f'{iscc_label}_{mode_label}', plane)
+
+print('Done!')
