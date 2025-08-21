@@ -160,6 +160,7 @@ print('saved model to: ', save_model_dir + f'model_{output_name}.h5')
 
 save_metric_dir = f'/home/{io.USER}/output/metrics/{output_name}'
 
+
 # Evaluate the test set
 print('METRICS:')
 evaluation = utils.model.evaluate_model(model_regCNN,
@@ -171,6 +172,8 @@ metrics.to_csv(save_metric_dir + f'/metrics_{output_name}.csv', index_label='epo
 print('Saved metrics to: ', save_metric_dir + f'/metrics_{output_name}.csv')
 
 
+
 plot_dir = f'/home/{io.USER}/plots/WSU-Vertexer-Plots/training/'
+
 utils.plot.plot_training_metrics(history, plot_dir, 'train_metrics_' + output_name)
 print('Done.')
