@@ -36,10 +36,6 @@ meg.add_argument("--nonswap",  required=False, default=False, action='store_true
 meg.add_argument("--fluxswap", required=False, default=False, action='store_true', help="For 'Combined' only, make predictions with the fluxswap inference file")
 args = parser.parse_args()
 
-int_modes = utils.plot.ModeType.get_known_int_modes()
-
-colors = utils.plot.NuModeColors()
-
 args.pred_file = args.pred_file
 args.test_file = args.test_file
 args.outdir = args.outdir
@@ -337,7 +333,7 @@ for i in range(0, len(int_modes)):
                            dpi=300)
         
 #for CC and NC
-def plot_radial_plane(df_subset, title_label, plane='XYZ'):
+def plot_radial_plane(df_subset, title_label, plane='XYZ', color='orange'):
     if df_subset.empty:
         print(f"Skipping empty subset: {title_label} ({plane})")
         return
@@ -384,7 +380,7 @@ def plot_radial_plane(df_subset, title_label, plane='XYZ'):
 
     plt.hist(model_diff,
              bins=bins_resolution,
-             color='orange',
+             color=color,
              alpha=0.5,
              label='Model Pred.')
 
@@ -419,8 +415,8 @@ def plot_radial_plane(df_subset, title_label, plane='XYZ'):
     
 #for the planes and radial plots for NC and CC
 for plane in ['XY', 'XZ', 'YZ', 'XYZ']:
-    plot_radial_plane(df[df['iscc'] == 1], 'CC_All', plane)
-    plot_radial_plane(df[df['iscc'] == 0], 'NC_All', plane)
+    plot_radial_plane(df[df['iscc'] == 1], 'CC_All', plane, color='orange')
+    plot_radial_plane(df[df['iscc'] == 0], 'NC_All', plane, color='orange')
 
 # --- Plot CC and NC by mode and plane ---
 for iscc_val, iscc_label in [(1, 'CC'), (0, 'NC')]:
@@ -428,7 +424,12 @@ for iscc_val, iscc_label in [(1, 'CC'), (0, 'NC')]:
         mode_label = utils.plot.ModeType.name(mode)  # e.g., 'QE', 'DIS'
         subset = df[(df['iscc'] == iscc_val) & (df['Mode'] == mode)]
 
+
         for plane in ['XY', 'XZ', 'YZ', 'XYZ']:
-            plot_radial_plane(subset, f'{iscc_label}_{mode_label}', plane)
+            plot_radial_plane(subset,
+                              f'{iscc_label}_{mode_label}',
+                              plane,
+                              color=colors.get_color(utils.plot.ModeType.name(mode), True)
+                            )
 
 print('Done!')

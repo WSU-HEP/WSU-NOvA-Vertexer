@@ -13,6 +13,29 @@ from tensorflow.python.client import device_lib
 import time
 from typing import Tuple
 
+import pykokkos as pk
+
+def set_portable_backend():
+    """
+    Ensures the script agrees with NVIDIA, AMD, or CPU-only nodes.
+    """
+    available = list(pk.ExecutionSpace)
+    
+    if pk.ExecutionSpace.Cuda in available:
+        pk.set_default_space(pk.ExecutionSpace.Cuda)
+    elif pk.ExecutionSpace.HIP in available:
+        pk.set_default_space(pk.ExecutionSpace.HIP)
+    elif pk.ExecutionSpace.OpenMP in available:
+        pk.set_default_space(pk.ExecutionSpace.OpenMP)
+    else:
+        pk.set_default_space(pk.ExecutionSpace.Serial)
+        
+    print(f"✅ PyKokkos hardware agreement reached: {pk.get_default_space()}")
+
+# Call it immediately after imports
+set_portable_backend()
+
+
 # Useful bits for the model
 class Hardware:
     @staticmethod
@@ -115,9 +138,9 @@ class Config:
         # add additional dense layers and output
         dense_layer_1 = Dense(256, activation='relu')(concatenated)
         d1 = Dropout(0.3)(dense_layer_1)
-        dense_layer_2 = Dense(256, activation='relu')(dense_layer_1)
+        dense_layer_2 = Dense(256, activation='relu')(d1)
         d2 = Dropout(0.3)(dense_layer_2)
-        dense_layer_3 = Dense(256, activation='relu')(dense_layer_2)
+        dense_layer_3 = Dense(256, activation='relu')(d2)
         output = Dense(3, activation='linear')(dense_layer_3)
 
         return Model(inputs=[input_xz, input_yz], outputs=output)
