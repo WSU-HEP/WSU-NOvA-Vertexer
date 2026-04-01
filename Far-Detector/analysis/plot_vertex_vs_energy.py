@@ -29,7 +29,7 @@ parser.add_argument("--pred_file", help="the CSV file of vertex predictions", de
 parser.add_argument("--outdir", help="full path to output directory", default="", type=str)
 parser.add_argument("--coordinate", help="the coordinate you want to plot", default="", type=str)
 parser.add_argument("--test_file", help="full path to file used for testing/inference",
-                    default="/home/k948d562/NOvA-shared/FD-Training-Samples/{}-Nominal-{}-{}/test/trimmed_h5_R20-11-25-prod5.1reco.j_{}-Nominal-{}-{}_27_of_28.h5",
+                    default="/homes/b677h798/MikeDolce_Research_Data/NOvA-shared/FD-Training-Samples/{}-Nominal-{}-{}/test/trimmed_h5_R20-11-25-prod5.1reco.j_{}-Nominal-{}-{}_27_of_28.h5",
                     type=str)
 args = parser.parse_args()
 

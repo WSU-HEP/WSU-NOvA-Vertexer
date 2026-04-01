@@ -66,7 +66,7 @@ else:
     sys.exit(1)
 
 print(f'Loading the {FLUX} file for model prediction')
-path_inference = f'/home/k948d562/NOvA-shared/FD-Training-Samples/{DETECTOR}-Nominal-{HORN}-{FLUX}/test/'
+path_inference = f'/homes/b677h798/MikeDolce_Research_Data/NOvA-shared/FD-Training-Samples/{DETECTOR}-Nominal-{HORN}-{FLUX}/test/'
 
 
 # Read in the info from the validation file -- don't really care about the events & files here.
