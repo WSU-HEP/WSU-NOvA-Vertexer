@@ -47,7 +47,8 @@ LOG_OUTDIR="/home/${USER}/output/logs/"
 
 TRAINING_SCRIPT=${COORDINATE}_"vertex_training.py"
 
-DATA_TRAIN_PATH="/home/k948d562/output/training/${DET}-Nominal-${HORN}-${FLUX}/"
+DATA_TRAIN_PATH="/homes/b677h798/MikeDolce_Research_Data/output/training/${DET}-Nominal-${HORN}-${FLUX}/"
+
 
 
 slurm_dir="/home/${USER}/slurm-scripts/"
@@ -98,22 +99,25 @@ echo "WSUVTX is: \${WSUVTX}"
 
 # load modules
 module load Python/3.11.5-GCCcore-13.2.0
-source /homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/activate
-/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python --version
+source /homes/b677h798/MikeDolce_Research_Data/virtual-envs/py3.11-pipTF2.15.0/bin/activate
+/homes/b677h798/MikeDolce_Research_Data/virtual-envs/py3.11-pipTF2.15.0/bin/python --version
 
 echo "INFO: appending WSUVTX to PYTHONPATH"
 unset PYTHONPATH
-export PYTHONPATH="/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/lib/python3.11/site-packages:\${WSUVTX}"
+export PYTHONPATH="/homes/b677h798/MikeDolce_Research_Data/virtual-envs/py3.11-pipTF2.15.0/lib/python3.11/site-packages:\${WSUVTX}"
 echo "PYTHONPATH is ... \$PYTHONPATH"
 
-export LD_LIBRARY_PATH="/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/lib:\$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="/homes/b677h798/MikeDolce_Research_Data/virtual-envs/py3.11-pipTF2.15.0/lib:\$LD_LIBRARY_PATH"
+
 
 export TF_ENABLE_ONEDNN_OPTS=0
 echo "TF_ENABLE_ONEDNN_OPTS = \${TF_ENABLE_ONEDNN_OPTS}"
 
-echo "/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS"
+
+echo "/homes/b677h798/MikeDolce_Research_Data/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS"
 #run python script
-/homes/k948d562/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS
+/homes/b677h798/MikeDolce_Research_Data/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS
+
 
 
 

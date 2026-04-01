@@ -26,16 +26,16 @@ echo "Flux: $FLUX"
 echo "File number: $FILE_NUMBER"
 
 # The file to be processed. Much of this is hardcoded, so (path/filename) cannot be tampered with!
-PREPROCESS_FILE_PATH=/home/k948d562/NOvA-shared/$DET-Training-Samples/$DET-Nominal-$HORN-$FLUX/train/trimmed_h5_R20-11-25-prod5.1reco.j_$DET-Nominal-$HORN-${FLUX}_${FILE_NUMBER}_of_28.h5
+PREPROCESS_FILE_PATH=/homes/b677h798/MikeDolce_Research_Data/NOvA-shared/$DET-Training-Samples/$DET-Nominal-$HORN-$FLUX/train/trimmed_h5_R20-11-25-prod5.1reco.j_$DET-Nominal-$HORN-${FLUX}_${FILE_NUMBER}_of_28.h5
 echo "Preprocessing file to be created from script: $PREPROCESS_FILE_PATH"
 PREPROCESS_FILE=trimmed_h5_R20-11-25-prod5.1reco.j_$DET-Nominal-$HORN-${FLUX}_${FILE_NUMBER}_of_28.h5
 
 outputfile=preprocess_${DET}_${HORN}_${FLUX}_file_${FILE_NUMBER}_date_${DATE}
 
 # the log files go into logs dir
-OUTDIR_PREFIX=/home/k948d562/output/wsu-vertexer/preprocess
+OUTDIR_PREFIX=/homes/b677h798/MikeDolce_Research_Data/output/wsu-vertexer/preprocess
 
-slurm_dir="/home/k948d562/slurm-scripts/"
+slurm_dir="/homes/b677h798/MikeDolce_Research_Data/slurm-scripts/"
 slurm_script="submit_slurm_${outputfile}.sh"
 
 cat > ${slurm_dir}/${slurm_script} <<EOF
@@ -66,12 +66,12 @@ cat > ${slurm_dir}/${slurm_script} <<EOF
 # load modules
 module load Python/3.7.4-GCCcore-8.3.0
 module load TensorFlow/2.3.1-fosscuda-2019b-Python-3.7.4
-source /home/k948d562/virtual-envs/VirtualTensorFlow-Abdul/VirtualTensor/bin/activate
-/home/k948d562/virtual-envs/VirtualTensorFlow-Abdul/VirtualTensor/bin/python --version
+source /homes/b677h798/MikeDolce_Research_Data/virtual-envs/VirtualTensorFlow-Abdul/VirtualTensor/bin/activate
+/homes/b677h798/MikeDolce_Research_Data/virtual-envs/VirtualTensorFlow-Abdul/VirtualTensor/bin/python --version
 
 
 #run python script
-/home/k948d562/virtual-envs/VirtualTensorFlow-Abdul/VirtualTensor/bin/python /home/k948d562/ml-vertexing/wsu-vertexer/preprocess/preprocess_h5_file.py  $PREPROCESS_FILE_PATH
+/homes/b677h798/MikeDolce_Research_Data/virtual-envs/VirtualTensorFlow-Abdul/VirtualTensor/bin/python /homes/b677h798/MikeDolce_Research_Data/ml-vertexing/wsu-vertexer/preprocess/preprocess_h5_file.py  $PREPROCESS_FILE_PATH
 EOF
 
 echo "Slurm script created: ${slurm_dir}/${slurm_script}"
