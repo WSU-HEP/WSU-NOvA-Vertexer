@@ -50,6 +50,7 @@ TRAINING_SCRIPT=${COORDINATE}_"vertex_training.py"
 DATA_TRAIN_PATH="/homes/b677h798/MikeDolce_Research_Data/output/training/${DET}-Nominal-${HORN}-${FLUX}/"
 
 
+
 slurm_dir="/home/${USER}/slurm-scripts/"
 
 slurm_script="submit_slurm_${outputfile}.sh"
@@ -116,6 +117,7 @@ echo "TF_ENABLE_ONEDNN_OPTS = \${TF_ENABLE_ONEDNN_OPTS}"
 echo "/homes/b677h798/MikeDolce_Research_Data/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS"
 #run python script
 /homes/b677h798/MikeDolce_Research_Data/virtual-envs/py3.11-pipTF2.15.0/bin/python \${WSUVTX}/Far-Detector/training/${TRAINING_SCRIPT} --data_train_path ${DATA_TRAIN_PATH} --epochs $EPOCHS
+
 
 
 
