@@ -8,6 +8,7 @@
 
 import argparse
 import os
+import tensorflow as tf
 
 from datetime import date
 import numpy as np
@@ -19,6 +20,7 @@ import utils.model
 import utils.plot
 import utils.data_processing as dp
 ########### begin main script ###########
+tf.config.run_functions_eagerly(True)
 
 # collect the arguments for this macro. the horn and swap options are required.
 parser = argparse.ArgumentParser()

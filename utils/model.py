@@ -15,25 +15,140 @@ from typing import Tuple
 
 import pykokkos as pk
 
-def set_portable_backend():
-    """
-    Ensures the script agrees with NVIDIA, AMD, or CPU-only nodes.
-    """
-    available = list(pk.ExecutionSpace)
+try:
+    from pykokkos import View, parallel_for, MDRangePolicy
+except ImportError:
+    # Some versions store these in the 'interface' sub-module
+    from pykokkos.interface import View, parallel_for, MDRangePolicy
+
+#def set_portable_backend():
+#    """
+#    Ensures the script agrees with NVIDIA, AMD, or CPU-only nodes.
+#    """
+#    available = list(pk.ExecutionSpace)
     
-    if pk.ExecutionSpace.Cuda in available:
-        pk.set_default_space(pk.ExecutionSpace.Cuda)
-    elif pk.ExecutionSpace.HIP in available:
-        pk.set_default_space(pk.ExecutionSpace.HIP)
-    elif pk.ExecutionSpace.OpenMP in available:
-        pk.set_default_space(pk.ExecutionSpace.OpenMP)
-    else:
-        pk.set_default_space(pk.ExecutionSpace.Serial)
+#    if pk.ExecutionSpace.Cuda in available:
+#        pk.set_default_space(pk.ExecutionSpace.Cuda)
+#    elif pk.ExecutionSpace.HIP in available:
+#        pk.set_default_space(pk.ExecutionSpace.HIP)
+#    elif pk.ExecutionSpace.OpenMP in available:
+#        pk.set_default_space(pk.ExecutionSpace.OpenMP)
+#    else:
+#        pk.set_default_space(pk.ExecutionSpace.Serial)
         
-    print(f"✅ PyKokkos hardware agreement reached: {pk.get_default_space()}")
+#    print(f"✅ PyKokkos hardware agreement reached: {pk.get_default_space()}")
 
 # Call it immediately after imports
-set_portable_backend()
+#set_portable_backend()
+
+#tf.config.run_functions_eagerly(True)
+
+# Standalone Workunit (Required by PyKokkos for compilation)
+@pk.workunit
+def pk_conv2d_kernel(r: int, c: int, f: int,
+                     input_view,
+                     weight_view,
+                     output_view):
+    acc = 0.0
+    for ic in range(input_view.extent(2)):
+        for kr in range(weight_view.extent(0)):
+            for kc in range(weight_view.extent(1)):
+                acc += (
+                    input_view[r + kr, c + kc, ic] *
+                    weight_view[kr, kc, ic, f]
+                )
+    output_view[b, r, c, f] = acc
+
+
+
+# 2. Custom Layer Definition
+class KokkosConv2D(tf.keras.layers.Layer):
+    def __init__(self, filters, kernel_size, strides=(1, 1), activation=None, **kwargs):
+        super().__init__(**kwargs)
+        self.filters = filters
+        self.kernel_size = kernel_size
+        self.strides = strides
+        self.activation = tf.keras.activations.get(activation)
+
+    def build(self, input_shape):
+        self.w = self.add_weight(
+            shape=(self.kernel_size[0], self.kernel_size[1], input_shape[-1], self.filters),
+            initializer="glorot_uniform",
+            trainable=True,
+            name="kernel"
+        )
+
+    def compute_output_shape(self, input_shape):
+        return (
+            input_shape[0],
+            input_shape[1] - self.kernel_size[0] + 1,
+            input_shape[2] - self.kernel_size[1] + 1,
+            self.filters,
+        )
+
+    # 🔧 Pure NumPy + PyKokkos function (NO TensorFlow ops inside)
+    def kokkos_forward(self, x, w):
+    # 1. Explicitly bridge to NumPy
+    # 'x' is the batch of images (128, 100, 80, 1)
+    # 'w' is the kernel weights (2, 2, 1, 32)
+        x_raw = x.numpy().astype(np.float64)
+        w_raw = w.numpy().astype(np.float64)
+
+        batch_size = x_raw.shape[0]
+        out_h = x_raw.shape[1] - self.kernel_size[0] + 1
+        out_w = x_raw.shape[2] - self.kernel_size[1] + 1
+    
+    # 2. Setup Weight View (4 Ranks - the limit)
+        # ✅ Explicit weight view (4D is OK here)
+        w_v = pk.View(shape=w_raw.shape, dtype=pk.double)
+        w_v[:] = w_raw
+        
+    # Buffer for results
+        batch_results = np.zeros((batch_size, out_h, out_w, self.filters),
+                                 dtype=np.float32
+        )
+
+    # 3. Process each event in the batch
+        for i in range(batch_size):
+        # Image i is Rank 3 (100, 80, 1)
+            in_np = x_raw[i]
+            in_v = pk.View(shape=in_np.shape, dtype=pk.double)
+            in_v[:] = in_np
+
+            out_v = pk.View(
+                shape=(out_h, out_w, self.filters),
+                dtype=pk.double
+            )
+
+            total = out_h * out_w * self.filters
+
+            pk.parallel_for(
+                pk.RangePolicy(0, total),
+                pk_conv2d_kernel, 
+                input_view=in_v,
+                weight_view=w_v,
+                output_view=out_v,
+                out_h=out_h,
+                out_w=out_w,
+                filters=self.filters
+            )
+        
+            batch_results[i] = np.array(out_v)
+
+        return batch_results
+
+    def call(self, inputs):
+        # Bridge TensorFlow → NumPy → PyKokkos
+        out = tf.py_function(
+            func=self.kokkos_forward,
+            inp=[inputs, self.w],
+            Tout=tf.float32
+        )
+
+        # IMPORTANT: restore shape info for Keras
+        out.set_shape(self.compute_output_shape(inputs.shape))
+
+        return self.activation(out) if self.activation else out
 
 
 # Useful bits for the model
@@ -74,6 +189,26 @@ class Hardware:
 
 class Config:
     @staticmethod
+    def setup_hardware():
+        """Detects hardware and sets PyKokkos execution space."""
+        gpus = tf.config.list_physical_devices('GPU')
+        if not gpus:
+            pk.set_default_space(pk.ExecutionSpace.OpenMP)
+            print("Hardware: CPU (OpenMP)")
+            return
+
+        gpu_details = tf.config.experimental.get_device_details(gpus[0])
+        device_name = gpu_details.get('device_name', '').lower()
+
+        if 'amd' in device_name or 'rocm' in device_name:
+            pk.set_default_space(pk.ExecutionSpace.HIP)
+            print(f"Hardware: AMD GPU ({device_name}) -> HIP")
+        else:
+            pk.set_default_space(pk.ExecutionSpace.Cuda)
+            print(f"Hardware: NVIDIA GPU ({device_name}) -> CUDA")
+
+    
+    @staticmethod
     def create_test_train_val_datasets(map_xz, map_yz, vtx_coords, test_size=0.25, val_size=0.1, random_state=101) -> Tuple[dict, dict, dict]:
         """
         :param map_xz: cvnmap for XZ view (features)
@@ -105,12 +240,15 @@ class Config:
 # or assemble_model_conv_inputs() ?
     @staticmethod
     def create_conv2d_branch_model_single_view() -> Sequential:
-        """
+        """ Branch model utilizing portable PyKokkos layers.
         Create the branch model for the XZ or YZ view.
         :return: Sequential() model
         """
+        Config.setup_hardware()  #Make sure the space is set before building
+
+        
         m = Sequential([
-            Conv2D(filters=32, kernel_size=(2, 2), strides=(1, 1), activation='relu', input_shape=(100, 80, 1)),
+            KokkosConv2D(filters=32, kernel_size=(2, 2), strides=(1, 1), activation='relu', input_shape=(100, 80, 1)),
             MaxPool2D(pool_size=(2, 2)),
             Flatten(),
             Dense(256, activation='relu'),
