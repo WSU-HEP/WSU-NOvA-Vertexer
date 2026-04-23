@@ -15,27 +15,6 @@ from typing import Tuple
 
 import pykokkos as pk
 
-def set_portable_backend():
-    """
-    Ensures the script agrees with NVIDIA, AMD, or CPU-only nodes.
-    """
-    available = list(pk.ExecutionSpace)
-    
-    if pk.ExecutionSpace.Cuda in available:
-        pk.set_default_space(pk.ExecutionSpace.Cuda)
-    elif pk.ExecutionSpace.HIP in available:
-        pk.set_default_space(pk.ExecutionSpace.HIP)
-    elif pk.ExecutionSpace.OpenMP in available:
-        pk.set_default_space(pk.ExecutionSpace.OpenMP)
-    else:
-        pk.set_default_space(pk.ExecutionSpace.Serial)
-        
-    print(f"✅ PyKokkos hardware agreement reached: {pk.get_default_space()}")
-
-# Call it immediately after imports
-set_portable_backend()
-
-
 # Useful bits for the model
 class Hardware:
     @staticmethod
@@ -73,6 +52,98 @@ class Hardware:
         return sess
 
 class Config:
+    """
+    Hardware-portable configuration:
+      - keeps trainable model layers in TensorFlow/Keras
+      - uses PyKokkos only for hardware selection and optional preprocessing hooks 
+      - supports CPU / NVIDIA GPU / AMD GPU where available 
+    """
+    @staticmethod
+    def setup_hardware() -> str:
+        """
+        Detect available hardware and set a portable PyKokkos execution space.
+        TensorFlow remains responsible for model execution.
+        """
+        gpus = tf.config.list_physical_devices("GPU")
+
+        if not gpus:
+            # CPU fallback
+            if hasattr(pk.ExecutionSpace, "OpenMP"):
+                pk.set_default_space(pk.ExecutionSpace.OpenMP)
+                backend = "OpenMP"
+            else:
+                pk.set_default_space(pk.ExecutionSpace.Serial)
+                backend = "Serial"
+
+            print(f"TensorFlow device: CPU")
+            print(f"PyKokkos backend: {backend}")
+            return backend
+
+        # Enable memory growth when possible
+        for gpu in gpus:
+            try:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            except Exception:
+                pass
+
+        # Try to identify vendor
+        gpu_details = {}
+        try:
+            gpu_details = tf.config.experimental.get_device_details(gpus[0])
+        except Exception:
+            gpu_details = {}
+
+        device_name = str(gpu_details.get("device_name", "")).lower()
+
+        if ("amd" in device_name or "rocm" in device_name) and hasattr(pk.ExecutionSpace, "HIP"):
+            pk.set_default_space(pk.ExecutionSpace.HIP)
+            backend = "HIP"
+        elif hasattr(pk.ExecutionSpace, "Cuda"):
+            pk.set_default_space(pk.ExecutionSpace.Cuda)
+            backend = "Cuda"
+        elif hasattr(pk.ExecutionSpace, "OpenMP"):
+            pk.set_default_space(pk.ExecutionSpace.OpenMP)
+            backend = "OpenMP"
+        else:
+            pk.set_default_space(pk.ExecutionSpace.Serial)
+            backend = "Serial"
+
+        print(f"TensorFlow GPUs detected: {len(gpus)}")
+        print(f"TensorFlow primary GPU: {device_name if device_name else 'unknown'}")
+        print(f"PyKokkos backend: {backend}")
+        return backend
+    @staticmethod
+    def preprocess_maps_for_model(map_data: np.ndarray, dtype=np.float32) -> np.ndarray:
+        """
+        Portable preprocessing hook.
+        Keep it simple and framework-safe.
+        Later, you can replace internals with PyKokkos-based preprocessing
+        without changing the model code.
+
+        Expected input shape:
+            (N, 100, 80) or (N, 100, 80, 1)
+
+        Returns:
+            (N, 100, 80, 1) float32
+        """
+        map_data = np.asarray(map_data, dtype=dtype)
+
+        if map_data.ndim == 3:
+            map_data = np.expand_dims(map_data, axis=-1)
+        elif map_data.ndim != 4:
+            raise ValueError(
+                f"Expected map_data with rank 3 or 4, got shape {map_data.shape}"
+            )
+
+        # Optional normalization hook
+        # Uncomment if appropriate for your data:
+        # max_abs = np.max(np.abs(map_data))
+        # if max_abs > 0:
+        #     map_data = map_data / max_abs
+
+        return map_data
+
+    
     @staticmethod
     def create_test_train_val_datasets(map_xz, map_yz, vtx_coords, test_size=0.25, val_size=0.1, random_state=101) -> Tuple[dict, dict, dict]:
         """
@@ -177,7 +248,27 @@ class Config:
         """
         early_stop = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=5)
         return early_stop
+    
+    @staticmethod
+    def build_portable_model() -> Model:
+        """
+        One-stop convenience method:
+          1. set up hardware
+          2. build both branches
+          3. assemble final model
+          4. compile
+        """
+        Config.setup_hardware()
 
+        model_xz = Config.create_conv2d_branch_model_single_view()
+        model_yz = Config.create_conv2d_branch_model_single_view()
+
+        model_output = Config.assemble_model_output(model_xz, model_yz)
+        Config.compile_model(model_output)
+
+        return model_output
+
+    
     @staticmethod
     def transform_data(data_train, data_val, data_test):
         """
